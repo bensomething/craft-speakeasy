@@ -1,0 +1,71 @@
+{# Default unlock screen. Self-contained (no host CSS assumed). Override via the
+   plugin's `template` setting to match your site. Receives `element`. #}
+{% set flashError = craft.app.session.getFlash('error') %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>{{ element.title ?? 'Protected'|t('sesame') }}</title>
+    <style>
+        :root { color-scheme: light dark; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #fafafa;
+            color: #1a1a1a;
+        }
+        .sesame { width: 100%; max-width: 22rem; }
+        .sesame__row { display: flex; gap: .5rem; }
+        .sesame__input {
+            flex: 1 1 auto;
+            padding: .6rem .75rem;
+            border: 1px solid #cbcbcb;
+            border-radius: .375rem;
+            background: #fff;
+            color: inherit;
+            font-size: 1rem;
+        }
+        .sesame__input:focus { outline: none; border-color: #555; }
+        .sesame__button {
+            padding: .6rem 1rem;
+            border: 0;
+            border-radius: .375rem;
+            background: #1a1a1a;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .sesame__button:hover { background: #333; }
+        .sesame__error { margin: .5rem 0 0; color: #c0392b; font-size: .875rem; }
+        @media (prefers-color-scheme: dark) {
+            body { background: #0d0d0d; color: #e8e8e8; }
+            .sesame__input { background: #1a1a1a; border-color: #333; }
+            .sesame__input:focus { border-color: #888; }
+            .sesame__button { background: #e8e8e8; color: #0d0d0d; }
+            .sesame__button:hover { background: #fff; }
+        }
+    </style>
+</head>
+<body>
+    <form class="sesame" method="post" accept-charset="utf-8">
+        <input type="hidden" name="action" value="sesame/unlock">
+        <input type="hidden" name="elementId" value="{{ element.id }}">
+        {{ csrfInput() }}
+        <div class="sesame__row">
+            <input class="sesame__input" id="password" type="password" name="password" autocomplete="off" placeholder="{{ 'Password'|t('sesame') }}" autofocus>
+            <button class="sesame__button" type="submit">{{ 'Enter'|t('sesame') }}</button>
+        </div>
+        {% if flashError %}
+            <p class="sesame__error">{{ flashError }}</p>
+        {% endif %}
+    </form>
+</body>
+</html>

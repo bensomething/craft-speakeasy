@@ -1,0 +1,53 @@
+{
+    "name": "bensomething/craft-sesame",
+    "description": "Per-element password protection for Craft CMS — an encrypted password field that gates front-end access behind an unlock screen.",
+    "type": "craft-plugin",
+    "license": "MIT",
+    "keywords": [
+        "craft",
+        "cms",
+        "craftcms",
+        "plugin",
+        "password",
+        "protect",
+        "access",
+        "security"
+    ],
+    "support": {
+        "issues": "https://github.com/bensomething/craft-sesame/issues",
+        "source": "https://github.com/bensomething/craft-sesame"
+    },
+    "require": {
+        "php": "^8.2",
+        "craftcms/cms": "^5.10"
+    },
+    "require-dev": {
+        "craftcms/ecs": "dev-main",
+        "craftcms/phpstan": "dev-main"
+    },
+    "autoload": {
+        "psr-4": {
+            "bensomething\\sesame\\": "src/"
+        }
+    },
+    "extra": {
+        "handle": "sesame",
+        "name": "Sesame",
+        "developer": "Ben Smith",
+        "developerUrl": "https://bensomething.com",
+        "documentationUrl": "https://github.com/bensomething/craft-sesame",
+        "changelogUrl": "https://raw.githubusercontent.com/bensomething/craft-sesame/main/CHANGELOG.md",
+        "class": "bensomething\\sesame\\Plugin"
+    },
+    "config": {
+        "allow-plugins": {
+            "yiisoft/yii2-composer": true,
+            "craftcms/plugin-installer": true
+        }
+    },
+    "scripts": {
+        "check-cs": "ecs check --ansi",
+        "fix-cs": "ecs check --ansi --fix",
+        "phpstan": "phpstan --memory-limit=1G"
+    }
+}
