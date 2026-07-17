@@ -31,10 +31,14 @@ class UnlockController extends Controller
 
         $plugin = Plugin::getInstance();
         $settings = $plugin->getSettings();
-        $cache = Craft::$app->getCache();
         $attemptKey = 'sesame:attempts:' . md5($request->getUserIP() . ':' . $element->id);
 
-        if ($settings->maxAttempts > 0 && (int)$cache->get($attemptKey) >= $settings->maxAttempts) {
+        // Count this attempt before checking the password, so parallel requests
+        // can't outrun a non-atomic counter and brute-force past the limit.
+        if (
+            $settings->maxAttempts > 0 &&
+            $this->bumpAttempts($attemptKey, $settings->attemptWindowSeconds) > $settings->maxAttempts
+        ) {
             Craft::$app->getSession()->setError(Craft::t('sesame', 'Too many attempts. Please try again later.'));
             return $this->redirect($element->getUrl());
         }
@@ -42,16 +46,35 @@ class UnlockController extends Controller
         $expected = $plugin->gate->getPassword($element);
 
         if ($expected !== null && hash_equals($expected, $submitted)) {
-            $cache->delete($attemptKey);
+            Craft::$app->getCache()->delete($attemptKey);
             $plugin->gate->unlock($expected);
             return $this->redirect($element->getUrl());
         }
 
-        if ($settings->maxAttempts > 0) {
-            $cache->set($attemptKey, (int)$cache->get($attemptKey) + 1, $settings->attemptWindowSeconds);
-        }
-
         Craft::$app->getSession()->setError(Craft::t('sesame', 'Incorrect password.'));
         return $this->redirect($element->getUrl());
+    }
+
+    /**
+     * Atomically increments the attempt counter and returns the new total. The
+     * read-modify-write is serialized with a mutex so concurrent attempts each
+     * count; if the lock can't be acquired, it fails safe (treats as over limit).
+     */
+    private function bumpAttempts(string $key, int $ttl): int
+    {
+        $cache = Craft::$app->getCache();
+        $mutex = Craft::$app->getMutex();
+
+        if (!$mutex->acquire($key, 3)) {
+            return PHP_INT_MAX;
+        }
+
+        try {
+            $count = (int)$cache->get($key) + 1;
+            $cache->set($key, $count, $ttl);
+            return $count;
+        } finally {
+            $mutex->release($key);
+        }
     }
 }

@@ -7,6 +7,7 @@ use craft\base\ElementInterface;
 use craft\base\Field;
 use craft\helpers\Cp;
 use craft\helpers\Html;
+use craft\models\GqlSchema;
 use craft\web\View;
 
 /**
@@ -84,6 +85,14 @@ class PasswordField extends Field
     public function getSearchKeywords(mixed $value, ElementInterface $element): string
     {
         return '';
+    }
+
+    /**
+     * Keep the decrypted value out of the GraphQL schema entirely.
+     */
+    public function includeInGqlSchema(GqlSchema $schema): bool
+    {
+        return false;
     }
 
     protected function inputHtml(mixed $value, ?ElementInterface $element, bool $inline): string
