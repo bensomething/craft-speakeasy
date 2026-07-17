@@ -85,6 +85,8 @@ If you can't drop the section from scope, filter protected entries out of respon
 
 Use `":notempty:"` to select only protected entries. It only tests presence against the encrypted value, it can't reveal or match the plaintext.
 
+Unlocking is server-side too: it's a session flag set by the `sesame/unlock` form and only checked when Craft renders the element's URL. There's no unlock over GraphQL, and unlocking wouldn't change API responses anyway. A decoupled or headless front-end therefore gets no protection from Sesame — gating that content is up to your app.
+
 ## Note on caching
 
 Protected responses are sent with `no-store`. If you use a server- or CDN-level full-page cache, make sure it honours that (or excludes protected URLs) so protected pages aren't served from cache to anonymous visitors.
