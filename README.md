@@ -1,6 +1,6 @@
 # Sesame
 
-Per-element password protection for Craft CMS. Add a **Sesame Password** field to an element type's field layout; once an element has a password set, anonymous visitors get an unlock screen until they enter it. Passwords are **encrypted at rest** with your project security key.
+Per-element password protection for Craft CMS. Add a **Password** field to an element type's field layout; once an element has a password set, anonymous visitors get an unlock screen until they enter it. Passwords are **encrypted at rest** with your project security key.
 
 ## Why Sesame
 
@@ -38,7 +38,7 @@ This never reveals or decrypts the password, it only checks whether one is set.
 
 - **Gates the element's own template-rendered URL:** Entries, categories, and custom element types with a template. The field is hidden from the layout designer for assets, users, and global sets, which have no such URL. Placement can't be fully blocked (inline creation, project config), so on a non-gate-able element the editor warns that the password has no effect.
 - **Not static files:** Assets are served without Craft in the request, so the gate never runs. Use a private volume served through a controller.
-- **Not other queries:** A protected element's fields shown in a listing, relation, eager-loaded loop, or the Element API are not gated, that's up to your templates.
+- **Not other queries:** A protected element's fields shown in a listing, relation, eager-loaded loop, GraphQL, or the Element API are not gated, that's up to your templates (see [Note on GraphQL and the API](#note-on-graphql-and-the-api)).
 - **Never outputs the password:** `{{ entry.<handle> }}` prints `••••••••`, and the value is kept out of the search index and GraphQL schema. Twig can't unwrap it either, templates only ever get the mask. The plaintext is reachable only from Sesame's own PHP, which the gate uses to compare.
 - **Fail-closed on key loss:** If the security key is rotated or lost, existing passwords can't be decrypted and those elements stay locked. Re-enter passwords after a key change.
 - **Rate-limited per IP + element:** Behind a proxy or CDN, make sure Craft is configured to see the real client IP.
@@ -65,6 +65,12 @@ Point the **Unlock template** setting at a site template. It receives an `elemen
     <button type="submit">{{ 'Enter'|t }}</button>
 </form>
 ```
+
+## Note on GraphQL and the API
+
+The gate guards an element's template-rendered URL — it does **not** run for GraphQL or the Element API, which are separate surfaces. Sesame keeps the *password itself* out of the API (the field is excluded from the GraphQL schema, so it can't be selected), but a protected element's **other** fields stay readable through any API whose scope includes them, without unlocking.
+
+If protected content must not reach the API, that's a schema-scope decision, not a field one: leave the section out of your GraphQL token / public schema, or keep protected entries in a section that isn't exposed. Note the field handle still appears as a query *argument* (a Craft-wide behaviour for content fields); it only tests presence against the encrypted value and can't reveal or match the plaintext.
 
 ## Note on caching
 
