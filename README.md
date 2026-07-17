@@ -6,7 +6,7 @@ Per-element password protection for Craft CMS. Add a **Sesame Password** field t
 
 - **Field-first:** protection = the field has a value. No section config, no template code.
 - **Encrypted, not plaintext:** the value lives encrypted in the database, not in config or templates.
-- **Editor-driven:** editors set passwords in the element editor; no per-page developer work.
+- **Editor-driven:** editors set passwords in the element editor, no per-page developer work.
 - **Safe defaults:** constant-time comparison, per-IP/element rate limiting, `no-store` + `noindex` on protected responses, shared unlock when passwords match, and a CP-user bypass so live preview keeps working.
 
 ## Requirements
@@ -66,13 +66,13 @@ Point the **Unlock template** setting at a site template. It receives an `elemen
 </form>
 ```
 
-## Note on Safari
-
-When editing in Safari, iCloud Keychain may offer to save the field's value as a site password. It keys on the field's label and has no markup-level opt-out — name the field anything other than "Password" (e.g. "Passphrase" or "Access code") to avoid the prompt. Firefox and Chrome are unaffected.
-
 ## Note on caching
 
 Protected responses are sent with `no-store`. If you use a server- or CDN-level full-page cache, make sure it honours that (or excludes protected URLs) so protected pages aren't served from cache to anonymous visitors.
+
+## Note on Safari
+
+When editing in Safari, iCloud Keychain may offer to save the field's value as a site password. It keys on the field's label and has no markup-level opt-out — name the field anything other than "Password" (e.g. "Passphrase" or "Access code") to avoid the prompt. Firefox and Chrome are unaffected.
 
 ## License
 
