@@ -68,11 +68,9 @@ Point the **Unlock template** setting at a site template. It receives an `elemen
 
 ## Note on GraphQL and the API
 
-The gate guards an element's template-rendered URL — it does **not** run for GraphQL or the Element API, which are separate surfaces. Sesame keeps the *password itself* out of the API (the field is excluded from the GraphQL schema, so it can't be selected), but a protected element's **other** fields stay readable through any API whose scope includes them, without unlocking.
+The gate only runs when Craft renders an element's URL — it does **not** apply to GraphQL, the Element API, or any decoupled/headless front-end. The password itself is excluded from the schema (it can't be selected), and unlocking is a server-side session flag with no API equivalent. But a protected element's **other** fields stay readable through any API whose scope includes them. Gating API-consumed content is your app's job.
 
-If protected content must not reach the API, that's a schema-scope decision, not a field one: leave the section out of your GraphQL token / public schema, or keep protected entries in a section that isn't exposed.
-
-If you can't drop the section from scope, filter protected entries out of responses instead. The field handle is exposed as a query *argument* (a Craft-wide behaviour for content fields), so you can test presence with it:
+To keep protected content out of an API, prefer scope: leave the section out of your GraphQL token / public schema. If you can't, filter it out — the field handle is exposed as a presence-only query argument (a Craft-wide behaviour), so:
 
 ```graphql
 # unprotected entries only
@@ -83,9 +81,7 @@ If you can't drop the section from scope, filter protected entries out of respon
 }
 ```
 
-Use `":notempty:"` to select only protected entries. It only tests presence against the encrypted value, it can't reveal or match the plaintext.
-
-Unlocking is server-side too: it's a session flag set by the `sesame/unlock` form and only checked when Craft renders the element's URL. There's no unlock over GraphQL, and unlocking wouldn't change API responses anyway. A decoupled or headless front-end therefore gets no protection from Sesame — gating that content is up to your app.
+Use `":notempty:"` for only protected entries. It tests presence against the encrypted value, never the plaintext.
 
 ## Note on caching
 
