@@ -65,17 +65,23 @@ class PasswordField extends Field implements PreviewableFieldInterface
             return null;
         }
 
-        // From the database: encrypted + base64-encoded. Decrypt to plain text.
-        // If decode/decrypt fails (e.g. the security key changed), keep the raw
-        // value so the element stays locked rather than becoming public.
-        $decoded = base64_decode($value, true);
-        if ($decoded === false) {
-            return new PasswordValue($value);
-        }
+        // From the database: encrypted + base64-encoded. Decrypt lazily — presence
+        // checks, the mask and index columns never need the plaintext, so only a
+        // guarded revealPassword() pays for it. If decode/decrypt fails (e.g. the
+        // security key changed), keep the raw value so the element stays locked
+        // rather than becoming public.
+        $stored = $value;
 
-        $decrypted = Craft::$app->getSecurity()->decryptByKey($decoded);
+        return new PasswordValue(static function() use ($stored): string {
+            $decoded = base64_decode($stored, true);
+            if ($decoded === false) {
+                return $stored;
+            }
 
-        return new PasswordValue($decrypted === false ? $value : $decrypted);
+            $decrypted = Craft::$app->getSecurity()->decryptByKey($decoded);
+
+            return $decrypted === false ? $stored : $decrypted;
+        });
     }
 
     public function normalizeValueFromRequest(mixed $value, ?ElementInterface $element): mixed

@@ -1,15 +1,13 @@
 # Sesame
 
-Per-element password protection for Craft CMS.
-
-Add a **Sesame Password** field to any element type's field layout. Once an element has a password set, anonymous front-end visitors see an unlock screen until they enter it. The password is **encrypted at rest** with your project security key.
+Per-element password protection for Craft CMS. Add a **Sesame Password** field to an element type's field layout; once an element has a password set, anonymous visitors get an unlock screen until they enter it. Passwords are **encrypted at rest** with your project security key.
 
 ## Why Sesame
 
-- **Field-first:** add it to any element's field layout — no section config, no template code. Protection = the field has a value. (Gating needs a template-rendered URL; see [What Sesame protects](#what-sesame-protects).)
-- **Encrypted, not plaintext:** unlike config/template-based tools, the value is encrypted in the database (revealable in the CP via an eye toggle, or shown as plain text via a field setting).
-- **Editor-driven:** content editors set a password in the element editor; no developer involvement per page.
-- **Built to be safe:** constant-time comparison, per-IP/element rate limiting, `no-store` + `noindex` on protected responses, shared-unlock when passwords match, and a CP-user bypass so live preview keeps working.
+- **Field-first:** protection = the field has a value. No section config, no template code.
+- **Encrypted, not plaintext:** the value lives encrypted in the database, not in config or templates.
+- **Editor-driven:** editors set passwords in the element editor; no per-page developer work.
+- **Safe defaults:** constant-time comparison, per-IP/element rate limiting, `no-store` + `noindex` on protected responses, shared unlock when passwords match, and a CP-user bypass so live preview keeps working.
 
 ## Requirements
 
@@ -23,22 +21,27 @@ composer require bensomething/craft-sesame
 
 ## Usage
 
-1. **Settings → Fields → New field** → field type **Password**. Add it to the field layout(s) of whatever you want to be protectable.
-2. Set a password on an element to protect it; clear it to make it public again.
+1. **Settings → Fields → New field**, type **Password**, and add it to the field layout(s) you want to protect.
+2. Set a password on an element to protect it, clear it to make it public again.
 
-Anonymous visitors get the unlock screen; entering the password reveals the page. Elements sharing the same password unlock together.
+Anonymous visitors get the unlock screen. Elements sharing the same password unlock together.
 
-## What Sesame protects
+To flag protected elements in your own templates, test the field for a value: set is truthy, empty is `null`:
 
-Sesame gates an element's **own URL**, and only when Craft renders that URL through a template — entries, categories, and custom element types with a template. It **cannot** protect assets or anything served as a static file: those URLs are delivered straight from your web server or filesystem without Craft in the request, so the gate never runs. The field is therefore only offered for element types with template-rendered URLs — it's hidden from the layout designer's field list for assets, users, and global sets. Placement can't be fully blocked (you can still create a field inline, or add it via project config), so if the field does land on a non-gate-able element, its editor warns that the password has no effect. For real asset protection, use a private volume served through a controller.
+```twig
+{% if entry.<handle> %}🔒{% endif %}
+```
 
-It also does **not** filter the element out of other queries. If you output a protected element's fields somewhere else (a listing, a relation, an eager-loaded loop, the Element API), that content is not gated; protecting those surfaces is up to your templates.
+This never reveals or decrypts the password, it only checks whether one is set.
 
-Outputting the field renders a fixed mask, not the password: `{{ entry.<handle> }}` prints `••••••••`, and the value is kept out of the search index and the GraphQL schema. The real password has to remain recoverable in code (that's how the gate compares it), so it's still available if you deliberately ask for it — just don't build a template that reveals it.
+## What it protects (and doesn't)
 
-Passwords are encrypted at rest with your project's security key. If that key is rotated or lost, existing passwords can no longer be decrypted: the affected elements stay locked (fail-closed) and the original values are unrecoverable, so re-enter passwords after a key change.
-
-Unlock attempts are rate-limited per client IP + element. Behind a proxy or CDN, make sure Craft is configured to see the real client IP, or the limit applies to the proxy's address.
+- **Gates the element's own template-rendered URL:** Entries, categories, and custom element types with a template. The field is hidden from the layout designer for assets, users, and global sets, which have no such URL. Placement can't be fully blocked (inline creation, project config), so on a non-gate-able element the editor warns that the password has no effect.
+- **Not static files:** Assets are served without Craft in the request, so the gate never runs. Use a private volume served through a controller.
+- **Not other queries:** A protected element's fields shown in a listing, relation, eager-loaded loop, or the Element API are not gated, that's up to your templates.
+- **Never outputs the password:** `{{ entry.<handle> }}` prints `••••••••`, and the value is kept out of the search index and GraphQL schema. Twig can't unwrap it either, templates only ever get the mask. The plaintext is reachable only from Sesame's own PHP, which the gate uses to compare.
+- **Fail-closed on key loss:** If the security key is rotated or lost, existing passwords can't be decrypted and those elements stay locked. Re-enter passwords after a key change.
+- **Rate-limited per IP + element:** Behind a proxy or CDN, make sure Craft is configured to see the real client IP.
 
 ## Settings
 
@@ -65,7 +68,7 @@ Point the **Unlock template** setting at a site template. It receives an `elemen
 
 ## Note on Safari
 
-When editing an element in Safari, iCloud Keychain may offer to save the field's value as a site password on save. It keys on the field's label text, and there's no markup-level opt-out. Name the field anything other than "Password" (e.g. "Passphrase" or "Access code") to avoid the prompt. Firefox and Chrome are unaffected.
+When editing in Safari, iCloud Keychain may offer to save the field's value as a site password. It keys on the field's label and has no markup-level opt-out — name the field anything other than "Password" (e.g. "Passphrase" or "Access code") to avoid the prompt. Firefox and Chrome are unaffected.
 
 ## Note on caching
 
