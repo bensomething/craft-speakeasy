@@ -2,9 +2,11 @@
 
 namespace bensomething\sesame\fields;
 
+use bensomething\sesame\fields\conditions\HasPasswordConditionRule;
 use Craft;
 use craft\base\ElementInterface;
 use craft\base\Field;
+use craft\base\PreviewableFieldInterface;
 use craft\helpers\Cp;
 use craft\helpers\Html;
 use craft\models\GqlSchema;
@@ -17,7 +19,7 @@ use craft\web\View;
  * The input is a text field masked with bullets via JS rather than a real
  * password input, so browser password managers never treat it as a login field.
  */
-class PasswordField extends Field
+class PasswordField extends Field implements PreviewableFieldInterface
 {
     private static bool $jsRegistered = false;
 
@@ -88,7 +90,7 @@ class PasswordField extends Field
 
     public function serializeValue(mixed $value, ?ElementInterface $element): mixed
     {
-        $plain = $value instanceof PasswordValue ? $value->revealPassword() : (is_string($value) ? $value : '');
+        $plain = $value instanceof PasswordValue ? $value->revealPassword(new RevealToken()) : (is_string($value) ? $value : '');
         if ($plain === '') {
             return null;
         }
@@ -112,11 +114,74 @@ class PasswordField extends Field
         return false;
     }
 
+    /**
+     * Static (uneditable) render — e.g. when a field layout condition locks the
+     * field for the current user. Craft's default runs inputHtml() through
+     * Html::disableInputs(), which disables the eye button and drops its JS while
+     * leaving the decrypted value sitting in the hidden real input. That exposes
+     * the plaintext with no way to reveal it — the worst of both. Render our own
+     * masked, value-free copy instead. Read-protection belongs to the field's
+     * visibility condition; this only governs editing.
+     */
+    public function getStaticHtml(mixed $value, ElementInterface $element): string
+    {
+        $plain = $value instanceof PasswordValue ? $value->revealPassword(new RevealToken()) : (is_string($value) ? $value : '');
+
+        // With the toggle on, the value is meant to stay masked and there is no JS
+        // here to reveal it — so show the mask and keep the plaintext out of the DOM
+        // entirely (no hidden real input). With the toggle off, the field is
+        // configured to always show plain text.
+        $masked = $value instanceof PasswordValue ? (string) $value : ($plain === '' ? '' : '••••••••');
+        $display = $this->showVisibilityToggle ? $masked : $plain;
+
+        return Html::tag('div',
+            Html::tag('input', '', [
+                'type' => 'text',
+                'value' => $display,
+                'disabled' => true,
+                'autocomplete' => 'off',
+                'class' => ['text', 'fullwidth'],
+            ]),
+            ['data-sesame-field' => true],
+        );
+    }
+
+    /**
+     * Makes the field filterable in element indexes and conditions as a
+     * lightswitch: on = has a password set, off = doesn't. Presence only.
+     */
+    public function getElementConditionRuleType(): array|string|null
+    {
+        return HasPasswordConditionRule::class;
+    }
+
+    /**
+     * Element index / card column. Never the plaintext — a client-side reveal
+     * here would mean decrypting every listed element's password into the page
+     * DOM. Just a check when a password is set, blank when not.
+     */
+    public function getPreviewHtml(mixed $value, ElementInterface $element): string
+    {
+        if (!$value instanceof PasswordValue || $value->isEmpty()) {
+            return '';
+        }
+
+        $label = Craft::t('sesame', 'Password set');
+
+        return Html::tag('span', Cp::iconSvg('check'), [
+            'class' => 'cp-icon',
+            'role' => 'img',
+            'title' => $label,
+            'aria' => ['label' => $label],
+            'style' => ['--icon-size' => '1rem'],
+        ]);
+    }
+
     protected function inputHtml(mixed $value, ?ElementInterface $element, bool $inline): string
     {
         $this->registerJs();
 
-        $current = $value instanceof PasswordValue ? $value->revealPassword() : (is_string($value) ? $value : '');
+        $current = $value instanceof PasswordValue ? $value->revealPassword(new RevealToken()) : (is_string($value) ? $value : '');
         $showToggle = $this->showVisibilityToggle && !$inline;
         $revealed = !$this->showVisibilityToggle;
 
