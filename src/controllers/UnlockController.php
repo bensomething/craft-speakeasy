@@ -15,11 +15,7 @@ class UnlockController extends Controller
 {
     protected array|bool|int $allowAnonymous = true;
 
-    /**
-     * Verifies the submitted password against the element's Sesame field. On
-     * success, unlocks it (and any element sharing the password) for the
-     * session. Failed attempts are rate-limited per IP + element.
-     */
+    // Failed attempts are rate-limited per IP + element.
     public function actionIndex(): ?Response
     {
         $this->requirePostRequest();

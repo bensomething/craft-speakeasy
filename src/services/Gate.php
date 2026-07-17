@@ -11,25 +11,15 @@ use craft\web\View;
 use yii\base\Component;
 
 /**
- * The front-end gate: decides whether a matched element is protected, whether
- * the current visitor may pass, and otherwise swaps in the unlock template.
- *
- * Element-agnostic — works for any element type that has a Sesame Password
- * field on its layout and a URL.
+ * Front-end gate: shows the unlock screen for a protected element unless the
+ * visitor has already unlocked it (or is a bypassing CP user).
  */
 class Gate extends Component
 {
-    /**
-     * Session key holding the set of unlocked password tokens (sha256 of each
-     * password entered this session). Unlocking is keyed by password, not
-     * element, so elements sharing a password unlock together.
-     */
+    // Unlocking is keyed by password hash, not element, so elements sharing a
+    // password unlock together.
     public const SESSION_KEY = 'sesame.unlocked';
 
-    /**
-     * Returns the decrypted password protecting an element, or null if it has
-     * no Sesame field with a value.
-     */
     public function getPassword(ElementInterface $element): ?string
     {
         $layout = $element->getFieldLayout();
@@ -71,11 +61,6 @@ class Gate extends Component
         return hash('sha256', $password);
     }
 
-    /**
-     * If the matched element is protected and the visitor isn't allowed through,
-     * swap the template for the unlock screen. Always marks protected responses
-     * as uncacheable and non-indexable.
-     */
     public function handleBeforeRenderPageTemplate(TemplateEvent $event): void
     {
         if ($event->templateMode !== View::TEMPLATE_MODE_SITE) {
@@ -92,7 +77,7 @@ class Gate extends Component
             return;
         }
 
-        // Protected content must never be stored by a page/CDN cache, or indexed.
+        // Never cache or index protected content.
         $response = Craft::$app->getResponse();
         $response->setNoCacheHeaders();
         $response->headers->set('X-Robots-Tag', 'noindex');

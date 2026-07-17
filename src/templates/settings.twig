@@ -1,5 +1,7 @@
 {% import '_includes/forms' as forms %}
 
+<h2 style="margin-top: 0;">{{ 'Settings'|t('sesame') }}</h2>
+
 {{ forms.lightswitchField({
     label: 'Bypass for control-panel users'|t('sesame'),
     instructions: 'Skip the unlock screen for signed-in users who can view the element in the CP (admins included). Keeps live preview usable.'|t('sesame'),

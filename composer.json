@@ -1,6 +1,6 @@
 {
     "name": "bensomething/craft-sesame",
-    "description": "Per-element password protection for Craft CMS — an encrypted password field that gates front-end access behind an unlock screen.",
+    "description": "Per-element password protection.",
     "type": "craft-plugin",
     "license": "MIT",
     "keywords": [
@@ -36,7 +36,7 @@
         "developer": "Ben Smith",
         "developerUrl": "https://bensomething.com",
         "documentationUrl": "https://github.com/bensomething/craft-sesame",
-        "changelogUrl": "https://raw.githubusercontent.com/bensomething/craft-sesame/main/CHANGELOG.md",
+        "changelogUrl": "https://raw.githubusercontent.com/bensomething/craft-sesame/develop/CHANGELOG.md",
         "class": "bensomething\\sesame\\Plugin"
     },
     "config": {

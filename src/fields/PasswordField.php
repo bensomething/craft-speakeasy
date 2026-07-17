@@ -10,34 +10,46 @@ use craft\helpers\Html;
 use craft\web\View;
 
 /**
- * Sesame Password — an encrypted password field.
+ * Sesame Password — a reversibly-encrypted field whose value gates front-end
+ * access to the element (see the Gate service).
  *
- * Stores its value encrypted (base64-encoded) with the project security key.
- * Because the encryption is reversible, the true value can be revealed in the
- * control panel. An element carrying a non-empty value in this field becomes
- * password-protected on the front end (see the Gate service).
- *
- * The input is a plain text field masked with bullets via JS (no type=password,
- * no -webkit-text-security), so browser password managers never treat it as a
- * login field.
+ * The input is a text field masked with bullets via JS rather than a real
+ * password input, so browser password managers never treat it as a login field.
  */
 class PasswordField extends Field
 {
     private static bool $jsRegistered = false;
 
+    /**
+     * Show the eye toggle to reveal/hide the value. When off, the value is
+     * shown as plain text with no toggle.
+     */
+    public bool $showVisibilityToggle = true;
+
     public static function displayName(): string
     {
-        return Craft::t('sesame', 'Sesame Password');
+        return Craft::t('sesame', 'Password');
     }
 
     public static function icon(): string
     {
-        return 'lock';
+        return 'eye-low-vision';
+    }
+
+    public function getSettingsHtml(): ?string
+    {
+        return Cp::lightswitchFieldHtml([
+            'label' => Craft::t('sesame', 'Show visibility toggle'),
+            'instructions' => Craft::t('sesame', 'Show an eye icon to reveal or hide the password. When off, the password is always shown as plain text.'),
+            'id' => 'showVisibilityToggle',
+            'name' => 'showVisibilityToggle',
+            'on' => $this->showVisibilityToggle,
+        ]);
     }
 
     public function normalizeValue(mixed $value, ?ElementInterface $element): mixed
     {
-        // From the database: encrypted + base64-encoded.
+        // From the database: encrypted + base64-encoded. Decrypt to plain text.
         if (!is_string($value) || $value === '') {
             return null;
         }
@@ -53,7 +65,7 @@ class PasswordField extends Field
 
     public function normalizeValueFromRequest(mixed $value, ?ElementInterface $element): mixed
     {
-        // Straight from the edit form: already plain text.
+        // From the edit form: already plain text.
         return is_string($value) && $value === '' ? null : $value;
     }
 
@@ -79,17 +91,18 @@ class PasswordField extends Field
         $this->registerJs();
 
         $current = is_string($value) ? $value : '';
+        $showToggle = $this->showVisibilityToggle && !$inline;
+        $revealed = !$this->showVisibilityToggle;
 
         // Real value (submitted). Craft namespaces this to fields[handle].
         $real = Html::hiddenInput($this->handle, $current, ['data-sesame-real' => true]);
 
-        // Bullet-only display (not submitted).
+        // Display copy (not submitted); masked with bullets unless revealed.
         $display = Html::tag('input', '', [
             'type' => 'text',
             'id' => $this->getInputId(),
-            'value' => str_repeat('•', mb_strlen($current)),
+            'value' => $revealed ? $current : str_repeat('•', mb_strlen($current)),
             'data-sesame-display' => true,
-            'class' => ['text', 'fullwidth'],
             'autocomplete' => 'off',
             'autocorrect' => 'off',
             'autocapitalize' => 'off',
@@ -97,7 +110,8 @@ class PasswordField extends Field
             'data-lpignore' => 'true',
             'data-1p-ignore' => 'true',
             'disabled' => $inline,
-            'style' => ['flex' => '1 1 auto'],
+            'class' => ['text', 'fullwidth'],
+            'style' => $showToggle ? ['padding-right' => '1.75rem'] : [],
         ]);
 
         $eye = Html::tag('span', Cp::iconSvg('eye'), [
@@ -111,17 +125,29 @@ class PasswordField extends Field
             'style' => ['--icon-size' => '1rem', '--icon-color' => 'var(--gray-400)', 'display' => 'none'],
         ]);
 
-        $toggle = $inline ? '' : Html::button($eye . $eyeOff, [
+        $toggle = !$showToggle ? '' : Html::button($eye . $eyeOff, [
             'type' => 'button',
             'data-sesame-toggle' => true,
             'title' => Craft::t('sesame', 'Show/hide password'),
-            'style' => ['background' => 'none', 'border' => '0', 'padding' => '4px', 'cursor' => 'pointer', 'line-height' => '0'],
+            'style' => [
+                'position' => 'absolute',
+                'top' => '50%',
+                'right' => '6px',
+                'transform' => 'translateY(-50%)',
+                'background' => 'none',
+                'border' => '0',
+                'padding' => '4px',
+                'cursor' => 'pointer',
+                'line-height' => '0',
+                '-webkit-user-select' => 'none',
+                'user-select' => 'none',
+            ],
         ]);
 
         return Html::tag('div', $real . $display . $toggle, [
             'data-sesame-field' => true,
-            'class' => ['flex'],
-            'style' => ['gap' => '5px', 'align-items' => 'center'],
+            'data-sesame-shown' => $revealed ? '1' : '0',
+            'style' => ['position' => 'relative'],
         ]);
     }
 
@@ -142,7 +168,7 @@ class PasswordField extends Field
     var eye = field.querySelector('[data-sesame-eye]');
     var eyeOff = field.querySelector('[data-sesame-eye-off]');
     var value = real ? real.value : '';
-    var shown = false;
+    var shown = field.getAttribute('data-sesame-shown') === '1';
     function paint(caret){
       disp.value = shown ? value : '•'.repeat(value.length);
       if (real) real.value = value;
@@ -185,7 +211,6 @@ class PasswordField extends Field
         if (eye) eye.style.display = shown ? 'none' : 'inline-flex';
         if (eyeOff) eyeOff.style.display = shown ? 'inline-flex' : 'none';
         paint(null);
-        disp.focus(); disp.select();
       });
     }
     paint(null);
