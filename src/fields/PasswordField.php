@@ -67,9 +67,13 @@ class PasswordField extends Field
         // If decode/decrypt fails (e.g. the security key changed), keep the raw
         // value so the element stays locked rather than becoming public.
         $decoded = base64_decode($value, true);
-        $plain = $decoded === false ? $value : (Craft::$app->getSecurity()->decryptByKey($decoded) ?: $value);
+        if ($decoded === false) {
+            return new PasswordValue($value);
+        }
 
-        return new PasswordValue($plain);
+        $decrypted = Craft::$app->getSecurity()->decryptByKey($decoded);
+
+        return new PasswordValue($decrypted === false ? $value : $decrypted);
     }
 
     public function normalizeValueFromRequest(mixed $value, ?ElementInterface $element): mixed
@@ -116,6 +120,12 @@ class PasswordField extends Field
         $showToggle = $this->showVisibilityToggle && !$inline;
         $revealed = !$this->showVisibilityToggle;
 
+        // The layout designer hides this field from non-gate-able element types, but
+        // placement can't be fully prevented (inline field creation, project config).
+        // Warn on the actual element edit where the gate can't run.
+        $showWarning = $element !== null && !$element::hasUris();
+        $warningId = $this->getInputId() . '-warning';
+
         // Real value (submitted). Craft namespaces this to fields[handle].
         $real = Html::hiddenInput($this->handle, $current, ['data-sesame-real' => true]);
 
@@ -131,6 +141,7 @@ class PasswordField extends Field
             'spellcheck' => 'false',
             'data-lpignore' => 'true',
             'data-1p-ignore' => 'true',
+            'aria-describedby' => $showWarning ? $warningId : null,
             'disabled' => $inline,
             'class' => ['text', 'fullwidth'],
             'style' => $showToggle ? ['padding-right' => '1.75rem'] : [],
@@ -172,18 +183,26 @@ class PasswordField extends Field
             'style' => ['position' => 'relative'],
         ]);
 
-        // The layout designer hides this field from non-gate-able element types,
-        // but placement can't be fully prevented (inline field creation, project
-        // config). Warn on the actual element edit where the gate can't run.
-        if ($element !== null && !$element::hasUris()) {
-            $warning = Html::tag('blockquote', Html::tag('p', Craft::t('sesame',
-                "This element type has no Craft-rendered URL, so Sesame can't gate it — setting a password here has no effect."
-            )), ['class' => ['note', 'warning'], 'style' => ['margin-top' => '0']]);
-
-            return $warning . $field;
+        if (!$showWarning) {
+            return $field;
         }
 
-        return $field;
+        // Mirrors the markup and spacing Craft gives a field layout element's warning;
+        // the native `.field > .warning` margin can't reach us inside the input container.
+        $warning = Html::tag('p',
+            Html::tag('span', '', ['class' => 'icon', 'aria-hidden' => 'true']) .
+            Html::tag('span', Craft::t('app', 'Warning:') . ' ', ['class' => 'visually-hidden']) .
+            Html::tag('span', Html::encode(Craft::t('sesame',
+                "This element type has no Craft-rendered URL, setting a password will have no effect."
+            ))),
+            [
+                'id' => $warningId,
+                'class' => ['warning', 'has-icon'],
+                'style' => ['margin-block' => '5px 0', 'margin-inline' => '0'],
+            ]
+        );
+
+        return $field . $warning;
     }
 
     private function registerJs(): void
