@@ -1,10 +1,10 @@
 # Sesame
 
-Per-element password protection for Craft CMS. Add a **Password** field to an element type's field layout; once an element has a password set, anonymous visitors get an unlock screen until they enter it. Passwords are **encrypted at rest** with your project security key.
+Per-element password protection for Craft CMS. Add a **Password** field to an element type's field layout, and once a password has been set, anonymous visitors get an unlock screen until they enter it. Passwords are **encrypted at rest** with your project security key.
 
 ## Why Sesame
 
-- **Field-first:** protection = the field has a value. No section config, no template code.
+- **Field-first:** protection = the field has a value. No section config or template code.
 - **Encrypted, not plaintext:** the value lives encrypted in the database, not in config or templates.
 - **Editor-driven:** editors set passwords in the element editor, no per-page developer work.
 - **Safe defaults:** constant-time comparison, per-IP/element rate limiting, `no-store` + `noindex` on protected responses, shared unlock when passwords match, and a CP-user bypass so live preview keeps working.
@@ -21,8 +21,8 @@ composer require bensomething/craft-sesame
 
 ## Usage
 
-1. **Settings → Fields → New field**, type **Password**, and add it to the field layout(s) you want to protect.
-2. Set a password on an element to protect it, clear it to make it public again.
+1. **Settings → Fields → New field**, create a **Password** field, then add it to the field layouts you want to protect.
+2. Set a password on an element to protect it. Clear it to make it public again.
 
 Anonymous visitors get the unlock screen. Elements sharing the same password unlock together.
 
@@ -36,8 +36,8 @@ This never reveals or decrypts the password, it only checks whether one is set.
 
 ## What it protects (and doesn't)
 
-- **Gates the element's own template-rendered URL:** Entries, categories, and custom element types with a template. The field is hidden from the layout designer for assets, users, and global sets, which have no such URL. Placement can't be fully blocked (inline creation, project config), so on a non-gate-able element the editor warns that the password has no effect.
-- **Not static files:** Assets are served without Craft in the request, so the gate never runs. Use a private volume served through a controller.
+- **Gates the element's own template-rendered URL:** Entries, categories, and custom element types with a template. The field is hidden from the layout designer for assets, users, and global sets, which have no such URL. Placement can't be fully blocked (inline creation, project config), so on a non-gateable element the field warns that a password has no effect.
+- **Not static files:** Assets are served without Craft in the request, so the gate never runs. Protecting them is a separate problem, the usual approach is a private filesystem with a controller that authorises and streams each file.
 - **Not other queries:** A protected element's fields shown in a listing, relation, eager-loaded loop, GraphQL, or the Element API are not gated, that's up to your templates (see [Note on GraphQL and the API](#note-on-graphql-and-the-api)).
 - **Never outputs the password:** `{{ entry.<handle> }}` prints `••••••••`, and the value is kept out of the search index and GraphQL schema. Twig can't unwrap it either, templates only ever get the mask. The plaintext is reachable only from Sesame's own PHP, which the gate uses to compare.
 - **Fail-closed on key loss:** If the security key is rotated or lost, existing passwords can't be decrypted and those elements stay locked. Re-enter passwords after a key change.
