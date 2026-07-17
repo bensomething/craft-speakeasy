@@ -3,6 +3,7 @@
 namespace bensomething\sesame\services;
 
 use bensomething\sesame\fields\PasswordField;
+use bensomething\sesame\fields\PasswordValue;
 use bensomething\sesame\Plugin;
 use Craft;
 use craft\base\ElementInterface;
@@ -30,8 +31,8 @@ class Gate extends Component
         foreach ($layout->getCustomFields() as $field) {
             if ($field instanceof PasswordField) {
                 $value = $element->getFieldValue($field->handle);
-                if (is_string($value) && $value !== '') {
-                    return $value;
+                if ($value instanceof PasswordValue && !$value->isEmpty()) {
+                    return $value->revealPassword();
                 }
             }
         }

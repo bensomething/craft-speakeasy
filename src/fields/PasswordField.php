@@ -50,33 +50,40 @@ class PasswordField extends Field
 
     public function normalizeValue(mixed $value, ?ElementInterface $element): mixed
     {
-        // From the database: encrypted + base64-encoded. Decrypt to plain text.
+        if ($value instanceof PasswordValue) {
+            return $value;
+        }
         if (!is_string($value) || $value === '') {
             return null;
         }
 
+        // From the database: encrypted + base64-encoded. Decrypt to plain text.
+        // If decode/decrypt fails (e.g. the security key changed), keep the raw
+        // value so the element stays locked rather than becoming public.
         $decoded = base64_decode($value, true);
-        if ($decoded === false) {
-            return $value;
-        }
+        $plain = $decoded === false ? $value : (Craft::$app->getSecurity()->decryptByKey($decoded) ?: $value);
 
-        $decrypted = Craft::$app->getSecurity()->decryptByKey($decoded);
-        return $decrypted === false ? $value : $decrypted;
+        return new PasswordValue($plain);
     }
 
     public function normalizeValueFromRequest(mixed $value, ?ElementInterface $element): mixed
     {
+        if ($value instanceof PasswordValue) {
+            return $value;
+        }
+
         // From the edit form: already plain text.
-        return is_string($value) && $value === '' ? null : $value;
+        return is_string($value) && $value !== '' ? new PasswordValue($value) : null;
     }
 
     public function serializeValue(mixed $value, ?ElementInterface $element): mixed
     {
-        if (!is_string($value) || $value === '') {
+        $plain = $value instanceof PasswordValue ? $value->revealPassword() : (is_string($value) ? $value : '');
+        if ($plain === '') {
             return null;
         }
 
-        return base64_encode(Craft::$app->getSecurity()->encryptByKey($value));
+        return base64_encode(Craft::$app->getSecurity()->encryptByKey($plain));
     }
 
     /**
@@ -99,7 +106,7 @@ class PasswordField extends Field
     {
         $this->registerJs();
 
-        $current = is_string($value) ? $value : '';
+        $current = $value instanceof PasswordValue ? $value->revealPassword() : (is_string($value) ? $value : '');
         $showToggle = $this->showVisibilityToggle && !$inline;
         $revealed = !$this->showVisibilityToggle;
 

@@ -32,7 +32,7 @@ Anonymous visitors get the unlock screen; entering the password reveals the page
 
 Sesame gates an element's **own URL** — the entry, category, or asset page a visitor loads directly. It does **not** filter the element out of other queries. If you output a protected element's fields somewhere else (a listing, a relation, an eager-loaded loop, the Element API), that content is not gated; protecting those surfaces is up to your templates.
 
-The field's value **is** the password. It's decrypted when read, so `{{ entry.<handle> }}` prints the real password — never output the field in a template. Sesame keeps the value out of the search index and the GraphQL schema, but it can't stop a template you write from echoing it.
+Outputting the field renders a fixed mask, not the password: `{{ entry.<handle> }}` prints `••••••••`, and the value is kept out of the search index and the GraphQL schema. The real password has to remain recoverable in code (that's how the gate compares it), so it's still available if you deliberately ask for it — just don't build a template that reveals it.
 
 Passwords are encrypted at rest with your project's security key. If that key is rotated or lost, existing passwords can no longer be decrypted: the affected elements stay locked (fail-closed) and the original values are unrecoverable, so re-enter passwords after a key change.
 
