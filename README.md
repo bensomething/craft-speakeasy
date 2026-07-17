@@ -70,7 +70,20 @@ Point the **Unlock template** setting at a site template. It receives an `elemen
 
 The gate guards an element's template-rendered URL — it does **not** run for GraphQL or the Element API, which are separate surfaces. Sesame keeps the *password itself* out of the API (the field is excluded from the GraphQL schema, so it can't be selected), but a protected element's **other** fields stay readable through any API whose scope includes them, without unlocking.
 
-If protected content must not reach the API, that's a schema-scope decision, not a field one: leave the section out of your GraphQL token / public schema, or keep protected entries in a section that isn't exposed. Note the field handle still appears as a query *argument* (a Craft-wide behaviour for content fields); it only tests presence against the encrypted value and can't reveal or match the plaintext.
+If protected content must not reach the API, that's a schema-scope decision, not a field one: leave the section out of your GraphQL token / public schema, or keep protected entries in a section that isn't exposed.
+
+If you can't drop the section from scope, filter protected entries out of responses instead. The field handle is exposed as a query *argument* (a Craft-wide behaviour for content fields), so you can test presence with it:
+
+```graphql
+# unprotected entries only
+{
+  entries(section: "home", <handle>: ":empty:") {
+    title
+  }
+}
+```
+
+Use `":notempty:"` to select only protected entries. It only tests presence against the encrypted value, it can't reveal or match the plaintext.
 
 ## Note on caching
 
