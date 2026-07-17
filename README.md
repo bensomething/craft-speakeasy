@@ -6,7 +6,7 @@ Add a **Sesame Password** field to any element type's field layout. Once an elem
 
 ## Why Sesame
 
-- **Field-first:** works on any element (entries, categories, assets, …); no section config, no template code. Protection = the field has a value.
+- **Field-first:** add it to any element's field layout — no section config, no template code. Protection = the field has a value. (Gating needs a template-rendered URL; see [What Sesame protects](#what-sesame-protects).)
 - **Encrypted, not plaintext:** unlike config/template-based tools, the value is encrypted in the database (revealable in the CP via an eye toggle, or shown as plain text via a field setting).
 - **Editor-driven:** content editors set a password in the element editor; no developer involvement per page.
 - **Built to be safe:** constant-time comparison, per-IP/element rate limiting, `no-store` + `noindex` on protected responses, shared-unlock when passwords match, and a CP-user bypass so live preview keeps working.
@@ -30,7 +30,9 @@ Anonymous visitors get the unlock screen; entering the password reveals the page
 
 ## What Sesame protects
 
-Sesame gates an element's **own URL** — the entry, category, or asset page a visitor loads directly. It does **not** filter the element out of other queries. If you output a protected element's fields somewhere else (a listing, a relation, an eager-loaded loop, the Element API), that content is not gated; protecting those surfaces is up to your templates.
+Sesame gates an element's **own URL**, and only when Craft renders that URL through a template — entries, categories, and custom element types with a template. It **cannot** protect assets or anything served as a static file: those URLs are delivered straight from your web server or filesystem without Craft in the request, so the gate never runs. The field is therefore only offered on element types with template-rendered URLs — you won't see it in the field layout designer for assets, users, or global sets. For real asset protection, use a private volume served through a controller.
+
+It also does **not** filter the element out of other queries. If you output a protected element's fields somewhere else (a listing, a relation, an eager-loaded loop, the Element API), that content is not gated; protecting those surfaces is up to your templates.
 
 Outputting the field renders a fixed mask, not the password: `{{ entry.<handle> }}` prints `••••••••`, and the value is kept out of the search index and the GraphQL schema. The real password has to remain recoverable in code (that's how the gate compares it), so it's still available if you deliberately ask for it — just don't build a template that reveals it.
 

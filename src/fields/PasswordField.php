@@ -39,13 +39,19 @@ class PasswordField extends Field
 
     public function getSettingsHtml(): ?string
     {
-        return Cp::lightswitchFieldHtml([
+        $warning = Html::tag('blockquote', Html::tag('p', Craft::t('sesame',
+            "Sesame gates a protected element's own page. Content you output elsewhere — listings, relations, the Element API — is not gated; that's up to your templates."
+        )), ['class' => ['note', 'warning']]);
+
+        $toggle = Cp::lightswitchFieldHtml([
             'label' => Craft::t('sesame', 'Show visibility toggle'),
             'instructions' => Craft::t('sesame', 'Show an eye icon to reveal or hide the password. When off, the password is always shown as plain text.'),
             'id' => 'showVisibilityToggle',
             'name' => 'showVisibilityToggle',
             'on' => $this->showVisibilityToggle,
         ]);
+
+        return $warning . $toggle;
     }
 
     public function normalizeValue(mixed $value, ?ElementInterface $element): mixed
