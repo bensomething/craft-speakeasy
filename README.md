@@ -30,7 +30,7 @@ Anonymous visitors get the unlock screen; entering the password reveals the page
 
 ## What Sesame protects
 
-Sesame gates an element's **own URL**, and only when Craft renders that URL through a template — entries, categories, and custom element types with a template. It **cannot** protect assets or anything served as a static file: those URLs are delivered straight from your web server or filesystem without Craft in the request, so the gate never runs. The field is therefore only offered on element types with template-rendered URLs — you won't see it in the field layout designer for assets, users, or global sets. For real asset protection, use a private volume served through a controller.
+Sesame gates an element's **own URL**, and only when Craft renders that URL through a template — entries, categories, and custom element types with a template. It **cannot** protect assets or anything served as a static file: those URLs are delivered straight from your web server or filesystem without Craft in the request, so the gate never runs. The field is therefore only offered for element types with template-rendered URLs — it's hidden from the layout designer's field list for assets, users, and global sets. Placement can't be fully blocked (you can still create a field inline, or add it via project config), so if the field does land on a non-gate-able element, its editor warns that the password has no effect. For real asset protection, use a private volume served through a controller.
 
 It also does **not** filter the element out of other queries. If you output a protected element's fields somewhere else (a listing, a relation, an eager-loaded loop, the Element API), that content is not gated; protecting those surfaces is up to your templates.
 

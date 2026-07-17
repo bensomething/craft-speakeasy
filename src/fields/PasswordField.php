@@ -166,11 +166,24 @@ class PasswordField extends Field
             ],
         ]);
 
-        return Html::tag('div', $real . $display . $toggle, [
+        $field = Html::tag('div', $real . $display . $toggle, [
             'data-sesame-field' => true,
             'data-sesame-shown' => $revealed ? '1' : '0',
             'style' => ['position' => 'relative'],
         ]);
+
+        // The layout designer hides this field from non-gate-able element types,
+        // but placement can't be fully prevented (inline field creation, project
+        // config). Warn on the actual element edit where the gate can't run.
+        if ($element !== null && !$element::hasUris()) {
+            $warning = Html::tag('blockquote', Html::tag('p', Craft::t('sesame',
+                "This element type has no Craft-rendered URL, so Sesame can't gate it — setting a password here has no effect."
+            )), ['class' => ['note', 'warning'], 'style' => ['margin-top' => '0']]);
+
+            return $warning . $field;
+        }
+
+        return $field;
     }
 
     private function registerJs(): void
