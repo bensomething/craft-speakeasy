@@ -193,8 +193,19 @@ class PasswordField extends Field implements PreviewableFieldInterface
 
         // The layout designer hides this field from non-gate-able element types, but
         // placement can't be fully prevented (inline field creation, project config).
-        // Warn on the actual element edit where the gate can't run.
-        $showWarning = $element !== null && !$element::hasUris();
+        // Warn on the actual element edit where the gate can't run. Also warn on a
+        // second (or later) Password field in the same layout: only the first one
+        // gates the page (see Gate::getPassword), so any extra is inert.
+        $warningText = null;
+        if ($element !== null && !$element::hasUris()) {
+            $warningText = Craft::t('sesame',
+                'This element type has no Craft-rendered URL, setting a password will have no effect.'
+            );
+        } elseif ($this->isRedundantInLayout($element)) {
+            $warningText = Craft::t('sesame',
+                'Only the first Password field in a layout gates the element, this additional field has no effect.'
+            );
+        }
         $warningId = $this->getInputId() . '-warning';
 
         // Real value (submitted). Craft namespaces this to fields[handle].
@@ -212,7 +223,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
             'spellcheck' => 'false',
             'data-lpignore' => 'true',
             'data-1p-ignore' => 'true',
-            'aria-describedby' => $showWarning ? $warningId : null,
+            'aria-describedby' => $warningText !== null ? $warningId : null,
             'disabled' => $inline,
             'class' => ['text', 'fullwidth'],
             'style' => $showToggle ? ['padding-right' => '1.75rem'] : [],
@@ -254,7 +265,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
             'style' => ['position' => 'relative'],
         ]);
 
-        if (!$showWarning) {
+        if ($warningText === null) {
             return $field;
         }
 
@@ -263,9 +274,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
         $warning = Html::tag('p',
             Html::tag('span', '', ['class' => 'icon', 'aria-hidden' => 'true']) .
             Html::tag('span', Craft::t('app', 'Warning:') . ' ', ['class' => 'visually-hidden']) .
-            Html::tag('span', Html::encode(Craft::t('sesame',
-                "This element type has no Craft-rendered URL, setting a password will have no effect."
-            ))),
+            Html::tag('span', Html::encode($warningText)),
             [
                 'id' => $warningId,
                 'class' => ['warning', 'has-icon'],
@@ -274,6 +283,27 @@ class PasswordField extends Field implements PreviewableFieldInterface
         );
 
         return $field . $warning;
+    }
+
+    /**
+     * True when this isn't the first Password field in the element's layout. Only
+     * the first one gates the element (Gate::getPassword returns the first set),
+     * so any later Password field is inert and worth warning about.
+     */
+    private function isRedundantInLayout(?ElementInterface $element): bool
+    {
+        $layout = $element?->getFieldLayout();
+        if ($layout === null) {
+            return false;
+        }
+
+        foreach ($layout->getCustomFields() as $field) {
+            if ($field instanceof self) {
+                return $field->handle !== $this->handle;
+            }
+        }
+
+        return false;
     }
 
     private function registerJs(): void

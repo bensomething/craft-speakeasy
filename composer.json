@@ -25,6 +25,9 @@
         "craftcms/ecs": "dev-main",
         "craftcms/phpstan": "dev-main"
     },
+    "suggest": {
+        "nystudio107/craft-code-editor": "Adds a Monaco (syntax-highlighting) editor to the unlock-screen CSS setting. Already present if you use the CKEditor plugin."
+    },
     "autoload": {
         "psr-4": {
             "bensomething\\sesame\\": "src/"

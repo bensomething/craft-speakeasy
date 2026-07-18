@@ -1,6 +1,7 @@
 {# Default unlock screen. Self-contained (no host CSS assumed). Override via the
    plugin's `template` setting to match your site. Receives `element`. #}
 {% set flashError = craft.app.session.getFlash('error') %}
+{% set sesameCss = craft.app.plugins.getPlugin('sesame').settings.safeCustomCss %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,32 +10,7 @@
     <meta name="robots" content="noindex">
     <title>{{ element.title ?? 'Protected'|t('sesame') }}</title>
     <style>
-        :root {
-            color-scheme: light dark;
-            --sesame-bg: #fafafa;
-            --sesame-fg: #1a1a1a;
-            --sesame-input-bg: #fff;
-            --sesame-input-border: #cbcbcb;
-            --sesame-input-border-focus: #555;
-            --sesame-button-bg: #1a1a1a;
-            --sesame-button-fg: #fff;
-            --sesame-button-bg-hover: #333;
-            --sesame-error: #c0392b;
-            --sesame-radius: .375rem;
-            --sesame-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --sesame-bg: #0d0d0d;
-                --sesame-fg: #e8e8e8;
-                --sesame-input-bg: #1a1a1a;
-                --sesame-input-border: #333;
-                --sesame-input-border-focus: #888;
-                --sesame-button-bg: #e8e8e8;
-                --sesame-button-fg: #0d0d0d;
-                --sesame-button-bg-hover: #fff;
-            }
-        }
+        {{ constant('bensomething\\sesame\\models\\Settings::DEFAULT_CSS') | raw }}
         * { box-sizing: border-box; }
         body {
             margin: 0;
@@ -70,6 +46,8 @@
         }
         .sesame__button:hover { background: var(--sesame-button-bg-hover); }
         .sesame__error { margin: .5rem 0 0; color: var(--sesame-error); font-size: .875rem; }
+        {# Custom overrides last so they win. Breakout-sanitised in Settings. #}
+        {{ sesameCss|raw }}
     </style>
 </head>
 <body>

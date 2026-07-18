@@ -15,6 +15,7 @@ use craft\events\TemplateEvent;
 use craft\fieldlayoutelements\CustomField;
 use craft\models\FieldLayout;
 use craft\services\Fields;
+use craft\web\Controller;
 use craft\web\View;
 use yii\base\Event;
 
@@ -99,10 +100,25 @@ class Plugin extends \craft\base\Plugin
         return new Settings();
     }
 
-    protected function settingsHtml(): ?string
+    /**
+     * Render settings as a full CP page (not the default fragment) so it can declare
+     * native tabs via the `tabs` variable — Craft wires those itself, no custom JS.
+     * Inputs are namespaced under `settings` to match how Craft's default plugin-
+     * settings response posts them.
+     */
+    public function getSettingsResponse(): mixed
     {
-        return Craft::$app->getView()->renderTemplate('sesame/settings', [
+        /** @var Controller $controller */
+        $controller = Craft::$app->controller;
+
+        return $controller->renderTemplate('sesame/_settings.twig', [
+            'plugin' => $this,
             'settings' => $this->getSettings(),
+            // Progressive enhancement: if nystudio107/craft-code-editor is present
+            // (it ships with the first-party CKEditor plugin, among others), give the
+            // CSS field a Monaco editor. Otherwise fall back to a plain textarea — no
+            // hard dependency, no Monaco footprint forced on installs that lack it.
+            'hasCodeEditor' => class_exists('nystudio107\\codeeditor\\CodeEditor'),
         ]);
     }
 }
