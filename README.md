@@ -18,8 +18,10 @@ Craft CMS 5.10+ and PHP 8.2+.
 ## Installation
 
 ```bash
-composer require bensomething/craft-sesame
+composer require bensomething/craft-sesame:^1.0.0-beta.1@beta
 ```
+
+Sesame is in beta, so the `@beta` flag is needed to install it under a project's default `stable` minimum stability.
 
 ## Usage
 
