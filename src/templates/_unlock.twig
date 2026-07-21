@@ -11,58 +11,12 @@
     <title>{{ element.title ?? 'Protected'|t('speakeasy') }}</title>
     <style>
         {{ constant('bensomething\\speakeasy\\models\\Settings::DEFAULT_CSS') | raw }}
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1.5rem;
-            font-family: var(--speakeasy-font);
-            background: var(--speakeasy-bg);
-            color: var(--speakeasy-fg);
-        }
-        .speakeasy { width: 100%; max-width: 22rem; }
-        .speakeasy__row { display: flex; gap: .5rem; }
-        .speakeasy__input {
-            flex: 1 1 auto;
-            padding: .6rem .75rem;
-            border: 1px solid var(--speakeasy-input-border);
-            border-radius: var(--speakeasy-radius);
-            background: var(--speakeasy-input-bg);
-            color: inherit;
-            font-size: 1rem;
-        }
-        .speakeasy__input:focus { outline: none; border-color: var(--speakeasy-input-border-focus); }
-        .speakeasy__button {
-            padding: .6rem 1rem;
-            border: 0;
-            border-radius: var(--speakeasy-radius);
-            background: var(--speakeasy-button-bg);
-            color: var(--speakeasy-button-fg);
-            font-weight: 500;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-        .speakeasy__button:hover { background: var(--speakeasy-button-bg-hover); }
-        .speakeasy__error { margin: .5rem 0 0; color: var(--speakeasy-error); font-size: .875rem; }
+        {% include 'speakeasy/_unlock_styles.twig' %}
         {# Custom overrides last so they win. Breakout-sanitised in Settings. #}
         {{ speakeasyCss|raw }}
     </style>
 </head>
 <body>
-    <form class="speakeasy" method="post" accept-charset="utf-8">
-        <input type="hidden" name="action" value="speakeasy/unlock">
-        <input type="hidden" name="elementId" value="{{ element.id }}">
-        {{ csrfInput() }}
-        <div class="speakeasy__row">
-            <input class="speakeasy__input" id="password" type="password" name="password" autocomplete="off" placeholder="{{ 'Password'|t('speakeasy') }}" autofocus>
-            <button class="speakeasy__button" type="submit">{{ 'Enter'|t('speakeasy') }}</button>
-        </div>
-        {% if flashError %}
-            <p class="speakeasy__error">{{ flashError }}</p>
-        {% endif %}
-    </form>
+    {% include 'speakeasy/_unlock_form.twig' with { element: element, flashError: flashError } only %}
 </body>
 </html>

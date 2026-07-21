@@ -32,8 +32,62 @@
     {{ hiddenInput('pluginHandle', plugin.handle) }}
     {{ redirectInput('settings') }}
 
-    {# Full-bleed dividers, matching Craft's native `.content-pane > hr` (ours are nested a level deeper). #}
-    <style>#speakeasy-general hr, #speakeasy-appearance hr { margin-inline: calc(var(--padding) * -1); }</style>
+    <style>
+        /* Full-bleed dividers, matching Craft's native `.content-pane > hr` (ours are nested a level deeper). */
+        #speakeasy-general hr, #speakeasy-appearance hr { margin-inline: calc(var(--padding) * -1); }
+
+        /* Editor beside its preview, even split. `minmax(0, 1fr)` keeps Monaco from
+           forcing its column wider than the grid track. */
+        .speakeasy-css-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+        @media (max-width: 900px) { .speakeasy-css-layout { grid-template-columns: minmax(0, 1fr); } }
+        .speakeasy-css-layout__vars { grid-column: 1 / -1; margin-top: 5px; }
+        /* Both columns are grid items in one row, so the preview stretches to exactly
+           the editor's height. Nothing above it in this column, hence no offset to
+           chase, which is why the controls float rather than sit in flow. */
+        .speakeasy-preview { position: relative; }
+        /* craft-code-editor's `.monaco-editor-background-frame` insets itself 5px top
+           and bottom. Match it or the two boxes miss each other by that much. */
+        .speakeasy-css-layout--monaco .speakeasy-preview { margin-block: 5px; }
+        .speakeasy-preview__frame {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--hairline-color);
+            border-radius: var(--large-border-radius);
+            background: var(--gray-050);
+        }
+
+        /* Controls float over the bottom-right of the frame. */
+        .speakeasy-preview__controls {
+            position: absolute;
+            bottom: 10px;
+            inset-inline-end: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        /* One chip style for both, so they sit level and stay legible against any
+           preview background. Solid, since the frame behind them is arbitrary. The
+           explicit height is what keeps the native select and the label in step, as
+           each would otherwise size itself off its own content. */
+        .speakeasy-preview__toggle, .speakeasy-preview__mode {
+            box-sizing: border-box;
+            margin: 0;
+            width: auto;
+            height: 24px;
+            padding: 0 6px;
+            font-size: 12px;
+            line-height: 1;
+            color: var(--text-color);
+            background: var(--white);
+            border: 1px solid var(--hairline-color);
+            border-radius: 4px;
+        }
+        .speakeasy-preview__toggle { display: flex; align-items: center; gap: 6px; box-shadow: none; }
+        .speakeasy-preview__toggle input { margin: 0; }
+        .speakeasy-preview__mode { box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+        .speakeasy-preview__mode.hidden { display: none; }
+    </style>
 
     <div id="speakeasy-general" role="tabpanel" aria-labelledby="tab-speakeasy-general">
         {% namespace 'settings' %}
@@ -87,6 +141,28 @@
     </div>
 
     <div id="speakeasy-appearance" class="hidden" role="tabpanel" aria-labelledby="tab-speakeasy-appearance">
+        {# The preview iframe's document, built from the same partials as the real
+           unlock screen. The token is where the JS below splices the CSS field's
+           current value, mirroring how `_unlock.twig` appends the custom CSS last.
+           Set outside the namespace block so its ids stay unprefixed. #}
+        {% set previewShell %}<!DOCTYPE html>
+<html lang="{{ craft.app.language }}">
+<head>
+    <meta charset="utf-8">
+    <style>
+        {{- constant('bensomething\\speakeasy\\models\\Settings::DEFAULT_CSS') | raw }}
+        {% include 'speakeasy/_unlock_styles.twig' %}
+        /*__SPEAKEASY_CUSTOM_CSS__*/
+    </style>
+</head>
+<body>
+    {%- include 'speakeasy/_unlock_form.twig' with {
+        preview: true,
+        flashError: 'Incorrect password.' | t('speakeasy'),
+    } only -%}
+</body>
+</html>{% endset %}
+
         {% namespace 'settings' %}
             {{ forms.autosuggestField({
                 label: 'Unlock template' | t('speakeasy'),
@@ -100,50 +176,174 @@
 
             <hr>
 
-            {# A custom template owns its own styling, so the CSS field does nothing
-               then — disable it. Reflects the saved template; a disabled field isn't
-               posted, so the stored CSS is retained and returns if the template is
-               later cleared. #}
             {% set hasTemplate = settings.template is not empty %}
-            {% set defaultCss = constant('bensomething\\speakeasy\\models\\Settings::DEFAULT_CSS') %}
-            {% set speakeasyVars = [
-                '--speakeasy-bg', '--speakeasy-fg', '--speakeasy-input-bg', '--speakeasy-input-border',
-                '--speakeasy-input-border-focus', '--speakeasy-button-bg', '--speakeasy-button-fg',
-                '--speakeasy-button-bg-hover', '--speakeasy-error', '--speakeasy-radius', '--speakeasy-font',
-            ] %}
-            {% set cssField = {
-                label: 'Unlock screen CSS' | t('speakeasy'),
-                instructions: "The bundled unlock screen's default styles — edit a value to restyle it, or clear the field to restore the defaults. Ignored when a custom Unlock template is set." | t('speakeasy'),
-                id: 'customCss',
-                name: 'customCss',
-                value: settings.customCss ?: (hasTemplate ? '' : defaultCss),
-                rows: 24,
-                class: 'code',
-                disabled: hasTemplate,
-                warning: hasTemplate ? 'This is being overridden by the **Unlock template** setting above.' | t('speakeasy') : null,
-                errors: settings.getErrors('customCss'),
-            } %}
+            {% set cssLabel = 'Unlock screen CSS' | t('speakeasy') %}
+            {% set cssInstructions = "The bundled unlock screen's default styles. Edit a value to restyle it, or clear the field to restore the defaults." | t('speakeasy') %}
 
-            {# Monaco when craft-code-editor is available, otherwise the plain textarea
-               the macro itself falls back to. Detected in Plugin::getSettingsResponse.
-               wrapperClass gives Monaco Craft's input border/radius + focus ring. #}
-            {% if hasCodeEditor %}
-                {% import 'codeeditor/codeEditor' as codeEditor %}
-                {{ codeEditor.textareaField(cssField, 'CodeEditor', { language: 'css', readOnly: hasTemplate }, { wrapperClass: 'monaco-editor-background-frame' }) }}
+            {% if hasTemplate %}
+                {# A custom template owns its styling, so there's nothing here to edit or
+                   preview. Rendering an empty input leaves Craft's warning sitting directly
+                   under the instructions. The field going unposted is what retains the
+                   stored CSS, so it returns if the template is later cleared. #}
+                {{ forms.field({
+                    label: cssLabel,
+                    instructions: cssInstructions,
+                    warning: 'This is being overridden by the **Unlock template** setting above.' | t('speakeasy'),
+                }, '') }}
             {% else %}
-                {{ forms.textareaField(cssField) }}
-            {% endif %}
+                {% set defaultCss = constant('bensomething\\speakeasy\\models\\Settings::DEFAULT_CSS') %}
+                {% set speakeasyVars = [
+                    '--speakeasy-bg', '--speakeasy-fg', '--speakeasy-input-bg', '--speakeasy-input-border',
+                    '--speakeasy-input-border-focus', '--speakeasy-button-bg', '--speakeasy-button-fg',
+                    '--speakeasy-button-bg-hover', '--speakeasy-error', '--speakeasy-radius', '--speakeasy-font',
+                ] %}
+                {# Input config only. The label, instructions and errors belong to the
+                   surrounding `forms.field` below, which wraps the whole grid. #}
+                {% set cssField = {
+                    id: 'customCss',
+                    name: 'customCss',
+                    value: settings.customCss ?: defaultCss,
+                    rows: 24,
+                    class: 'code',
+                } %}
 
-            {# Variable reference, below the editor — copyable pills, like field handles.
-               Keep in sync with Settings::DEFAULT_CSS. #}
-            <div style="margin-top: 5px;">
-                <div class="light">{{ 'Available variables:' | t('speakeasy') }}</div>
-                <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
-                    {% for v in speakeasyVars %}
-                        <craft-copy-attribute class="copytextbtn" value="{{ v }}">{{ v }}</craft-copy-attribute>
-                    {% endfor %}
+                {# The grid goes inside the field's input slot rather than wrapping the
+                   whole field, so the row holds the editor box alone. Label and
+                   instructions then sit above both columns, leaving the preview nothing
+                   to offset around, which is what makes the edges line up exactly. #}
+                {% set cssInput %}
+                <div class="speakeasy-css-layout{{ hasCodeEditor ? ' speakeasy-css-layout--monaco' : '' }}">
+                    {# Monaco when craft-code-editor is available, otherwise the plain textarea
+                       the macro itself falls back to. Detected in Plugin::getSettingsResponse.
+                       wrapperClass gives Monaco Craft's input border/radius + focus ring. #}
+                    <div>
+                        {% if hasCodeEditor %}
+                            {% import 'codeeditor/codeEditor' as codeEditor %}
+                            {{ codeEditor.textarea(cssField, 'CodeEditor', { language: 'css' }, { wrapperClass: 'monaco-editor-background-frame' }) }}
+                        {% else %}
+                            {{ forms.textarea(cssField) }}
+                        {% endif %}
+                    </div>
+
+                    {# Live preview. Sandboxed with neither `allow-scripts` nor `allow-same-origin`,
+                       so nothing typed into the field can run or reach the CP around it.
+                       Hooked by class, not id: `{% namespace %}` rewrites ids, so the JS
+                       below would never find them. #}
+                    <div class="speakeasy-preview" data-cast-ignore>
+                        <iframe class="speakeasy-preview__frame" sandbox="" title="{{ 'Unlock screen preview' | t('speakeasy') }}"></iframe>
+                        <div class="speakeasy-preview__controls">
+                            {# Revealed by the JS below only when the CSS defines a
+                               `prefers-color-scheme` block worth switching between. #}
+                            <select class="speakeasy-preview__mode hidden" aria-label="{{ 'Preview colour scheme' | t('speakeasy') }}">
+                                <option value="light">{{ 'Light' | t('speakeasy') }}</option>
+                                <option value="dark">{{ 'Dark' | t('speakeasy') }}</option>
+                            </select>
+                            <label class="speakeasy-preview__toggle">
+                                <input class="speakeasy-preview__error-toggle" type="checkbox">
+                                <span>{{ 'Show error message' | t('speakeasy') }}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {# Variable reference below both columns, as copyable pills like field handles.
+                       Keep in sync with Settings::DEFAULT_CSS. #}
+                    <div class="speakeasy-css-layout__vars field">
+                        {# Craft's own field-heading markup, so it picks up label styling. #}
+                        <div class="heading"><label>{{ 'Available variables' | t('speakeasy') }}</label></div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
+                            {% for v in speakeasyVars %}
+                                <craft-copy-attribute class="copytextbtn" value="{{ v }}">{{ v }}</craft-copy-attribute>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
-            </div>
+                {% endset %}
+
+                {{ forms.field({
+                    label: cssLabel,
+                    instructions: cssInstructions,
+                    id: 'customCss',
+                    errors: settings.getErrors('customCss'),
+                }, cssInput) }}
+            {% endif %}
         {% endnamespace %}
+
+        {% if not hasTemplate %}
+            {% js %}
+                (function() {
+                    var tab = document.getElementById('speakeasy-appearance');
+                    var frame = tab.querySelector('.speakeasy-preview__frame');
+                    var errorToggle = tab.querySelector('.speakeasy-preview__error-toggle');
+                    // The field's own textarea, not Monaco's internal unnamed one.
+                    var field = tab.querySelector('textarea[name*="customCss"]');
+                    if (!frame || !field) {
+                        return;
+                    }
+
+                    var shell = {{ previewShell | json_encode | raw }};
+                    var mode = tab.querySelector('.speakeasy-preview__mode');
+                    var SCHEME_QUERY = /\(\s*prefers-color-scheme\s*:\s*(dark|light)\s*\)/gi;
+                    var ALWAYS = '(min-width: 0px)';
+                    var NEVER = '(max-width: 0px)';
+                    var rendered = null;
+
+                    // A media query can't be overridden from outside, so force a scheme by
+                    // rewriting the query itself into one that always or never matches.
+                    // `color-scheme` goes along for the ride so form controls follow too.
+                    // Only the head's `</style>` can match, the CSS having had its `<` escaped.
+                    function forceScheme(doc, wanted) {
+                        return doc
+                            .replace(SCHEME_QUERY, function(match, scheme) {
+                                return scheme.toLowerCase() === wanted ? ALWAYS : NEVER;
+                            })
+                            .replace('</style>', ':root { color-scheme: ' + wanted + '; }</style>');
+                    }
+
+                    function render() {
+                        var css = field.value;
+                        var showError = errorToggle.checked;
+                        var wanted = mode.value;
+                        var key = wanted + (showError ? '1' : '0') + css;
+                        if (key === rendered) {
+                            return;
+                        }
+                        rendered = key;
+
+                        // Same `<` escape Settings::getSafeCustomCss applies, so the preview
+                        // shows exactly what the real screen would.
+                        var safe = css.replace(/</g, '\\00003c ');
+                        if (!showError) {
+                            safe += '\n.speakeasy__error { display: none; }';
+                        }
+
+                        // Function replacement so `$&` and friends in the CSS stay literal.
+                        var doc = shell.replace('/*__SPEAKEASY_CUSTOM_CSS__*/', function() {
+                            return safe;
+                        });
+
+                        // Nothing to switch between unless the CSS defines a scheme block,
+                        // though the scheme is pinned either way so the preview never drifts
+                        // with whatever the machine viewing it happens to be set to.
+                        SCHEME_QUERY.lastIndex = 0;
+                        var switchable = SCHEME_QUERY.test(doc);
+                        mode.classList.toggle('hidden', !switchable);
+                        if (!switchable) {
+                            mode.value = 'light';
+                            wanted = 'light';
+                        }
+
+                        frame.srcdoc = forceScheme(doc, wanted);
+                    }
+
+                    // Monaco writes back to the textarea without firing `input`, so poll as
+                    // well. The listeners just make the common cases feel immediate.
+                    field.addEventListener('input', render);
+                    errorToggle.addEventListener('change', render);
+                    mode.addEventListener('change', render);
+                    setInterval(render, 250);
+                    render();
+                })();
+            {% endjs %}
+        {% endif %}
     </div>
 {% endblock %}
