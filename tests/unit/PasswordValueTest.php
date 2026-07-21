@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace bensomething\sesame\tests\unit;
+namespace bensomething\speakeasy\tests\unit;
 
-use bensomething\sesame\fields\PasswordValue;
-use bensomething\sesame\fields\RevealToken;
+use bensomething\speakeasy\fields\PasswordValue;
+use bensomething\speakeasy\fields\RevealToken;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

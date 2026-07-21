@@ -1,8 +1,8 @@
 <?php
 
-namespace bensomething\sesame\controllers;
+namespace bensomething\speakeasy\controllers;
 
-use bensomething\sesame\Plugin;
+use bensomething\speakeasy\Plugin;
 use Craft;
 use craft\web\Controller;
 use yii\web\NotFoundHttpException;
@@ -31,7 +31,7 @@ class UnlockController extends Controller
 
         $plugin = Plugin::getInstance();
         $settings = $plugin->getSettings();
-        $attemptKey = 'sesame:attempts:' . md5($request->getUserIP() . ':' . $element->id);
+        $attemptKey = 'speakeasy:attempts:' . md5($request->getUserIP() . ':' . $element->id);
 
         // Count this attempt before checking the password, so parallel requests
         // can't outrun a non-atomic counter and brute-force past the limit.
@@ -39,7 +39,7 @@ class UnlockController extends Controller
             $settings->maxAttempts > 0 &&
             $this->bumpAttempts($attemptKey, $settings->attemptWindowSeconds) > $settings->maxAttempts
         ) {
-            Craft::$app->getSession()->setError(Craft::t('sesame', 'Too many attempts. Please try again later.'));
+            Craft::$app->getSession()->setError(Craft::t('speakeasy', 'Too many attempts. Please try again later.'));
             return $this->redirect($element->getUrl());
         }
 
@@ -51,7 +51,7 @@ class UnlockController extends Controller
             return $this->redirect($element->getUrl());
         }
 
-        Craft::$app->getSession()->setError(Craft::t('sesame', 'Incorrect password.'));
+        Craft::$app->getSession()->setError(Craft::t('speakeasy', 'Incorrect password.'));
         return $this->redirect($element->getUrl());
     }
 

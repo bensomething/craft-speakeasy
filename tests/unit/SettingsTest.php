@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace bensomething\sesame\tests\unit;
+namespace bensomething\speakeasy\tests\unit;
 
-use bensomething\sesame\models\Settings;
+use bensomething\speakeasy\models\Settings;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -68,9 +68,9 @@ class SettingsTest extends TestCase
     public function testSafeCustomCssLeavesOrdinaryCssIntact(): void
     {
         $settings = new Settings();
-        $settings->customCss = ':root { --sesame-bg: #fff; }';
+        $settings->customCss = ':root { --speakeasy-bg: #fff; }';
 
-        $this->assertSame(':root { --sesame-bg: #fff; }', $settings->getSafeCustomCss());
+        $this->assertSame(':root { --speakeasy-bg: #fff; }', $settings->getSafeCustomCss());
     }
 
     public function testDefaultCssDefinesTheVariablesTheUnlockTemplateUses(): void
@@ -78,7 +78,7 @@ class SettingsTest extends TestCase
         $template = file_get_contents(dirname(__DIR__, 2) . '/src/templates/_unlock.twig');
         $this->assertIsString($template);
 
-        preg_match_all('/var\(\s*(--sesame-[a-z0-9-]+)/i', $template, $matches);
+        preg_match_all('/var\(\s*(--speakeasy-[a-z0-9-]+)/i', $template, $matches);
         $used = array_unique($matches[1]);
         $this->assertNotEmpty($used, 'No CSS variables found in the unlock template');
 

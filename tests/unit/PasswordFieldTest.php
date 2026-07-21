@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace bensomething\sesame\tests\unit;
+namespace bensomething\speakeasy\tests\unit;
 
-use bensomething\sesame\fields\conditions\HasPasswordConditionRule;
-use bensomething\sesame\fields\PasswordField;
-use bensomething\sesame\fields\PasswordValue;
-use bensomething\sesame\fields\RevealToken;
+use bensomething\speakeasy\fields\conditions\HasPasswordConditionRule;
+use bensomething\speakeasy\fields\PasswordField;
+use bensomething\speakeasy\fields\PasswordValue;
+use bensomething\speakeasy\fields\RevealToken;
 use craft\base\ElementInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

@@ -1,10 +1,10 @@
 <?php
 
-namespace bensomething\sesame;
+namespace bensomething\speakeasy;
 
-use bensomething\sesame\fields\PasswordField;
-use bensomething\sesame\models\Settings;
-use bensomething\sesame\services\Gate;
+use bensomething\speakeasy\fields\PasswordField;
+use bensomething\speakeasy\models\Settings;
+use bensomething\speakeasy\services\Gate;
 use Craft;
 use craft\base\ElementInterface;
 use craft\base\Model;
@@ -20,9 +20,9 @@ use craft\web\View;
 use yii\base\Event;
 
 /**
- * Sesame — per-element password protection.
+ * Speakeasy — per-element password protection.
  *
- * Add a Sesame Password field to the field layout of any element type with
+ * Add a Speakeasy Password field to the field layout of any element type with
  * template-rendered URLs (entries, categories, …). Once an element has a value
  * in that field, anonymous front-end visitors are shown an unlock screen until
  * they enter the password. The value is encrypted at rest with the project
@@ -56,12 +56,12 @@ class Plugin extends \craft\base\Plugin
             }
         );
 
-        // Make the bundled unlock template resolvable as `sesame/_unlock`.
+        // Make the bundled unlock template resolvable as `speakeasy/_unlock`.
         Event::on(
             View::class,
             View::EVENT_REGISTER_SITE_TEMPLATE_ROOTS,
             static function(RegisterTemplateRootsEvent $event) {
-                $event->roots['sesame'] = __DIR__ . '/templates';
+                $event->roots['speakeasy'] = __DIR__ . '/templates';
             }
         );
 
@@ -111,7 +111,7 @@ class Plugin extends \craft\base\Plugin
         /** @var Controller $controller */
         $controller = Craft::$app->controller;
 
-        return $controller->renderTemplate('sesame/_settings.twig', [
+        return $controller->renderTemplate('speakeasy/_settings.twig', [
             'plugin' => $this,
             'settings' => $this->getSettings(),
             // Progressive enhancement: if nystudio107/craft-code-editor is present

@@ -1,5 +1,5 @@
 {
-    "name": "bensomething/craft-sesame",
+    "name": "bensomething/craft-speakeasy",
     "description": "Per-element password protection.",
     "type": "craft-plugin",
     "license": "MIT",
@@ -14,8 +14,8 @@
         "security"
     ],
     "support": {
-        "issues": "https://github.com/bensomething/craft-sesame/issues",
-        "source": "https://github.com/bensomething/craft-sesame"
+        "issues": "https://github.com/bensomething/craft-speakeasy/issues",
+        "source": "https://github.com/bensomething/craft-speakeasy"
     },
     "require": {
         "php": "^8.2",
@@ -31,22 +31,22 @@
     },
     "autoload": {
         "psr-4": {
-            "bensomething\\sesame\\": "src/"
+            "bensomething\\speakeasy\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "bensomething\\sesame\\tests\\": "tests/"
+            "bensomething\\speakeasy\\tests\\": "tests/"
         }
     },
     "extra": {
-        "handle": "sesame",
-        "name": "Sesame",
+        "handle": "speakeasy",
+        "name": "Speakeasy",
         "developer": "Ben Smith",
         "developerUrl": "https://bensomething.com",
-        "documentationUrl": "https://github.com/bensomething/craft-sesame",
-        "changelogUrl": "https://raw.githubusercontent.com/bensomething/craft-sesame/develop/CHANGELOG.md",
-        "class": "bensomething\\sesame\\Plugin"
+        "documentationUrl": "https://github.com/bensomething/craft-speakeasy",
+        "changelogUrl": "https://raw.githubusercontent.com/bensomething/craft-speakeasy/develop/CHANGELOG.md",
+        "class": "bensomething\\speakeasy\\Plugin"
     },
     "config": {
         "allow-plugins": {

@@ -1,8 +1,8 @@
 <?php
 
-namespace bensomething\sesame\fields;
+namespace bensomething\speakeasy\fields;
 
-use bensomething\sesame\fields\conditions\HasPasswordConditionRule;
+use bensomething\speakeasy\fields\conditions\HasPasswordConditionRule;
 use Craft;
 use craft\base\ElementInterface;
 use craft\base\Field;
@@ -13,7 +13,7 @@ use craft\models\GqlSchema;
 use craft\web\View;
 
 /**
- * Sesame Password — a reversibly-encrypted field whose value gates front-end
+ * Speakeasy Password — a reversibly-encrypted field whose value gates front-end
  * access to the element (see the Gate service).
  *
  * The input is a text field masked with bullets via JS rather than a real
@@ -31,7 +31,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
 
     public static function displayName(): string
     {
-        return Craft::t('sesame', 'Password');
+        return Craft::t('speakeasy', 'Password');
     }
 
     public static function icon(): string
@@ -41,13 +41,13 @@ class PasswordField extends Field implements PreviewableFieldInterface
 
     public function getSettingsHtml(): ?string
     {
-        $warning = Html::tag('blockquote', Html::tag('p', Craft::t('sesame',
-            "Sesame gates a protected element's own page. Content you output elsewhere — listings, relations, the Element API — is not gated; that's up to your templates."
+        $warning = Html::tag('blockquote', Html::tag('p', Craft::t('speakeasy',
+            "Speakeasy gates a protected element's own page. Content you output elsewhere — listings, relations, the Element API — is not gated; that's up to your templates."
         )), ['class' => ['note', 'warning']]);
 
         $toggle = Cp::lightswitchFieldHtml([
-            'label' => Craft::t('sesame', 'Show visibility toggle'),
-            'instructions' => Craft::t('sesame', 'Show an eye icon to reveal or hide the password. When off, the password is always shown as plain text.'),
+            'label' => Craft::t('speakeasy', 'Show visibility toggle'),
+            'instructions' => Craft::t('speakeasy', 'Show an eye icon to reveal or hide the password. When off, the password is always shown as plain text.'),
             'id' => 'showVisibilityToggle',
             'name' => 'showVisibilityToggle',
             'on' => $this->showVisibilityToggle,
@@ -148,7 +148,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
                 'autocomplete' => 'off',
                 'class' => ['text', 'fullwidth', 'code'],
             ]),
-            ['data-sesame-field' => true],
+            ['data-speakeasy-field' => true],
         );
     }
 
@@ -172,7 +172,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
             return '';
         }
 
-        $label = Craft::t('sesame', 'Password set');
+        $label = Craft::t('speakeasy', 'Password set');
 
         return Html::tag('span', Cp::iconSvg('check'), [
             'class' => 'cp-icon',
@@ -198,25 +198,25 @@ class PasswordField extends Field implements PreviewableFieldInterface
         // gates the page (see Gate::getPassword), so any extra is inert.
         $warningText = null;
         if ($element !== null && !$element::hasUris()) {
-            $warningText = Craft::t('sesame',
+            $warningText = Craft::t('speakeasy',
                 'This element type has no Craft-rendered URL, setting a password will have no effect.'
             );
         } elseif ($this->isRedundantInLayout($element)) {
-            $warningText = Craft::t('sesame',
+            $warningText = Craft::t('speakeasy',
                 'Only the first Password field in a layout gates the element, this additional field has no effect.'
             );
         }
         $warningId = $this->getInputId() . '-warning';
 
         // Real value (submitted). Craft namespaces this to fields[handle].
-        $real = Html::hiddenInput($this->handle, $current, ['data-sesame-real' => true]);
+        $real = Html::hiddenInput($this->handle, $current, ['data-speakeasy-real' => true]);
 
         // Display copy (not submitted); masked with bullets unless revealed.
         $display = Html::tag('input', '', [
             'type' => 'text',
             'id' => $this->getInputId(),
             'value' => $revealed ? $current : str_repeat('•', mb_strlen($current)),
-            'data-sesame-display' => true,
+            'data-speakeasy-display' => true,
             'autocomplete' => 'off',
             'autocorrect' => 'off',
             'autocapitalize' => 'off',
@@ -230,20 +230,20 @@ class PasswordField extends Field implements PreviewableFieldInterface
         ]);
 
         $eye = Html::tag('span', Cp::iconSvg('eye'), [
-            'data-sesame-eye' => true,
+            'data-speakeasy-eye' => true,
             'class' => 'cp-icon',
             'style' => ['--icon-size' => '1rem', '--icon-color' => 'var(--gray-400)', 'display' => 'inline-flex'],
         ]);
         $eyeOff = Html::tag('span', Cp::iconSvg('eye-low-vision'), [
-            'data-sesame-eye-off' => true,
+            'data-speakeasy-eye-off' => true,
             'class' => 'cp-icon',
             'style' => ['--icon-size' => '1rem', '--icon-color' => 'var(--gray-400)', 'display' => 'none'],
         ]);
 
         $toggle = !$showToggle ? '' : Html::button($eye . $eyeOff, [
             'type' => 'button',
-            'data-sesame-toggle' => true,
-            'title' => Craft::t('sesame', 'Show/hide password'),
+            'data-speakeasy-toggle' => true,
+            'title' => Craft::t('speakeasy', 'Show/hide password'),
             'style' => [
                 'position' => 'absolute',
                 'top' => '50%',
@@ -260,8 +260,8 @@ class PasswordField extends Field implements PreviewableFieldInterface
         ]);
 
         $field = Html::tag('div', $real . $display . $toggle, [
-            'data-sesame-field' => true,
-            'data-sesame-shown' => $revealed ? '1' : '0',
+            'data-speakeasy-field' => true,
+            'data-speakeasy-shown' => $revealed ? '1' : '0',
             'style' => ['position' => 'relative'],
         ]);
 
@@ -316,14 +316,14 @@ class PasswordField extends Field implements PreviewableFieldInterface
         $js = <<<'JS'
 (function(){
   function wire(field){
-    if (field._sesameWired) return; field._sesameWired = true;
-    var real = field.querySelector('[data-sesame-real]');
-    var disp = field.querySelector('[data-sesame-display]');
-    var btn = field.querySelector('[data-sesame-toggle]');
-    var eye = field.querySelector('[data-sesame-eye]');
-    var eyeOff = field.querySelector('[data-sesame-eye-off]');
+    if (field._speakeasyWired) return; field._speakeasyWired = true;
+    var real = field.querySelector('[data-speakeasy-real]');
+    var disp = field.querySelector('[data-speakeasy-display]');
+    var btn = field.querySelector('[data-speakeasy-toggle]');
+    var eye = field.querySelector('[data-speakeasy-eye]');
+    var eyeOff = field.querySelector('[data-speakeasy-eye-off]');
     var value = real ? real.value : '';
-    var shown = field.getAttribute('data-sesame-shown') === '1';
+    var shown = field.getAttribute('data-speakeasy-shown') === '1';
     function paint(caret){
       disp.value = shown ? value : '•'.repeat(value.length);
       if (real) real.value = value;
@@ -370,7 +370,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
     }
     paint(null);
   }
-  document.querySelectorAll('[data-sesame-field]').forEach(wire);
+  document.querySelectorAll('[data-speakeasy-field]').forEach(wire);
 })();
 JS;
 

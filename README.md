@@ -1,13 +1,13 @@
-# Sesame
+# Speakeasy
 
 Per-element password protection for Craft CMS. Add a **Password** field to an element type's field layout, and once a password has been set, anonymous visitors get an unlock screen until they enter it. Passwords are **encrypted at rest** with your project security key.
 
 > [!NOTE]
-> **Sesame is in beta.** It's feature-complete and safe to try, but the API, settings, and stored-value formats may still change before 1.0.0. Please [report anything you hit](https://github.com/bensomething/craft-sesame/issues).
+> **Speakeasy is in beta.** It's feature-complete and safe to try, but the API, settings, and stored-value formats may still change before 1.0.0. Please [report anything you hit](https://github.com/bensomething/craft-speakeasy/issues).
 
-> **These are shared access passwords, not user credentials.** They're reversibly encrypted so editors can view and share them, deliberately *not* one-way hashed like a login password. Sesame gates a page behind a shared passphrase, it doesn't authenticate individual users. If you need per-user login, use Craft's user accounts.
+> **These are shared access passwords, not user credentials.** They're reversibly encrypted so editors can view and share them, deliberately *not* one-way hashed like a login password. Speakeasy gates a page behind a shared passphrase, it doesn't authenticate individual users. If you need per-user login, use Craft's user accounts.
 
-## Why Sesame
+## Why Speakeasy
 
 - **Field-first:** protection = the field has a value. No section config or template code.
 - **Encrypted, not plaintext:** the value lives encrypted in the database, not in config or templates.
@@ -21,7 +21,7 @@ Craft CMS 5.10+ and PHP 8.2+.
 ## Installation
 
 ```bash
-composer require bensomething/craft-sesame:^1.0.0-beta
+composer require bensomething/craft-speakeasy:^1.0.0-beta
 ```
 
 The `-beta` in the constraint is what lets Composer install it under a project's default `stable` minimum stability.
@@ -46,7 +46,7 @@ This never reveals or decrypts the password, it only checks whether one is set.
 - **Gates the element's own template-rendered URL:** Entries, categories, and custom element types with a template. The field is hidden from the layout designer for assets, users, and global sets, which have no such URL. Placement can't be fully blocked (inline creation, project config), so on a non-gateable element the field warns that a password has no effect.
 - **Not static files:** Assets are served without Craft in the request, so the gate never runs. Protecting them is a separate problem, the usual approach is a private filesystem with a controller that authorises and streams each file.
 - **Not other queries:** A protected element's fields shown in a listing, relation, eager-loaded loop, GraphQL, or the Element API are not gated, that's up to your templates (see [Note on GraphQL and the API](#note-on-graphql-and-the-api)).
-- **Never outputs the password:** `{{ entry.<handle> }}` prints `••••••••`, and the value is kept out of the search index and GraphQL schema. Twig can't unwrap it either, templates only ever get the mask. The plaintext is reachable only from Sesame's own PHP, which the gate uses to compare.
+- **Never outputs the password:** `{{ entry.<handle> }}` prints `••••••••`, and the value is kept out of the search index and GraphQL schema. Twig can't unwrap it either, templates only ever get the mask. The plaintext is reachable only from Speakeasy's own PHP, which the gate uses to compare.
 - **Fail-closed on key loss:** If the security key is rotated or lost, existing passwords can't be decrypted and those elements stay locked. Re-enter passwords after a key change.
 - **Unlocks live in the visitor's session:** They end when the browser closes, and PHP may expire an idle session sooner (`session.gc_maxlifetime`, often 24 minutes). Unlock duration sets an upper bound on top of that, it can't extend an unlock beyond the session itself, so an unlock lasts for whichever ends first.
 - **Rate-limited per IP + element:** Behind a proxy or CDN, make sure Craft is configured to see the real client IP. Rate limiting relies on Craft's cache — a null/dummy cache driver disables the lockout.
@@ -75,20 +75,20 @@ Without replacing the template, you can retheme the bundled unlock screen from t
 
 ```css
 :root {
-    --sesame-bg: #101418;
-    --sesame-button-bg: #4a7dff;
+    --speakeasy-bg: #101418;
+    --speakeasy-button-bg: #4a7dff;
 }
 ```
 
-Available variables: `--sesame-bg`, `--sesame-fg`, `--sesame-input-bg`, `--sesame-input-border`, `--sesame-input-border-focus`, `--sesame-button-bg`, `--sesame-button-fg`, `--sesame-button-bg-hover`, `--sesame-error`, `--sesame-radius`, `--sesame-font`. This field is ignored once a custom **Unlock template** is set — your template owns its own styling. If the [CKEditor plugin](https://github.com/craftcms/ckeditor) (or anything else depending on `nystudio107/craft-code-editor`) is installed, the field upgrades to a syntax-highlighting Monaco editor; otherwise it's a plain code textarea.
+Available variables: `--speakeasy-bg`, `--speakeasy-fg`, `--speakeasy-input-bg`, `--speakeasy-input-border`, `--speakeasy-input-border-focus`, `--speakeasy-button-bg`, `--speakeasy-button-fg`, `--speakeasy-button-bg-hover`, `--speakeasy-error`, `--speakeasy-radius`, `--speakeasy-font`. This field is ignored once a custom **Unlock template** is set — your template owns its own styling. If the [CKEditor plugin](https://github.com/craftcms/ckeditor) (or anything else depending on `nystudio107/craft-code-editor`) is installed, the field upgrades to a syntax-highlighting Monaco editor; otherwise it's a plain code textarea.
 
 ### Custom unlock template
 
-Point the **Unlock template** setting at a site template. It receives an `element` variable and must post to the `sesame/unlock` action:
+Point the **Unlock template** setting at a site template. It receives an `element` variable and must post to the `speakeasy/unlock` action:
 
 ```twig
 <form method="post">
-    <input type="hidden" name="action" value="sesame/unlock">
+    <input type="hidden" name="action" value="speakeasy/unlock">
     <input type="hidden" name="elementId" value="{{ element.id }}">
     {{ csrfInput() }}
     <input type="password" name="password" autofocus>
@@ -119,7 +119,7 @@ Protected responses are sent with `no-store`. If you use a server- or CDN-level 
 
 ## Note on light/dark mode
 
-The bundled unlock screen is a self-contained page (Sesame swaps the whole response, so none of your site's CSS or JS loads on it). It adapts to light/dark via the visitor's **OS/browser** preference — `@media (prefers-color-scheme: dark)` — which works everywhere without any cooperation from your templates. It does **not** follow a site's manual theme toggle (a `.dark` class, a `data-theme` attribute, a cookie), because that toggle's JS never runs on the unlock screen. If a visitor's OS is light but they've switched your site to dark, the unlock screen still shows light. To mirror a manual toggle, use a custom **Unlock template** so the screen renders inside your own layout, where your theme logic applies.
+The bundled unlock screen is a self-contained page (Speakeasy swaps the whole response, so none of your site's CSS or JS loads on it). It adapts to light/dark via the visitor's **OS/browser** preference — `@media (prefers-color-scheme: dark)` — which works everywhere without any cooperation from your templates. It does **not** follow a site's manual theme toggle (a `.dark` class, a `data-theme` attribute, a cookie), because that toggle's JS never runs on the unlock screen. If a visitor's OS is light but they've switched your site to dark, the unlock screen still shows light. To mirror a manual toggle, use a custom **Unlock template** so the screen renders inside your own layout, where your theme logic applies.
 
 ## Note on Safari
 

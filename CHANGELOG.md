@@ -1,4 +1,4 @@
-# Release Notes for Sesame
+# Release Notes for Speakeasy
 
 ## 1.0.0-beta.1 - 2026-07-21
 

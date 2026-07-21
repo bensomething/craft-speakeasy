@@ -1,11 +1,11 @@
 <?php
 
-namespace bensomething\sesame\services;
+namespace bensomething\speakeasy\services;
 
-use bensomething\sesame\fields\PasswordField;
-use bensomething\sesame\fields\PasswordValue;
-use bensomething\sesame\fields\RevealToken;
-use bensomething\sesame\Plugin;
+use bensomething\speakeasy\fields\PasswordField;
+use bensomething\speakeasy\fields\PasswordValue;
+use bensomething\speakeasy\fields\RevealToken;
+use bensomething\speakeasy\Plugin;
 use Craft;
 use craft\base\ElementInterface;
 use craft\events\TemplateEvent;
@@ -20,7 +20,7 @@ class Gate extends Component
 {
     // Unlocking is keyed by password hash, not element, so elements sharing a
     // password unlock together. Values are the unlock timestamp.
-    public const SESSION_KEY = 'sesame.unlocked';
+    public const SESSION_KEY = 'speakeasy.unlocked';
 
     public function getPassword(ElementInterface $element): ?string
     {
@@ -117,7 +117,7 @@ class Gate extends Component
             return;
         }
 
-        $event->template = $settings->template ?: 'sesame/_unlock';
+        $event->template = $settings->template ?: 'speakeasy/_unlock';
         $event->variables = array_merge($event->variables, [
             'element' => $element,
         ]);

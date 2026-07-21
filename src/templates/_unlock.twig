@@ -1,16 +1,16 @@
 {# Default unlock screen. Self-contained (no host CSS assumed). Override via the
    plugin's `template` setting to match your site. Receives `element`. #}
 {% set flashError = craft.app.session.getFlash('error') %}
-{% set sesameCss = craft.app.plugins.getPlugin('sesame').settings.safeCustomCss %}
+{% set speakeasyCss = craft.app.plugins.getPlugin('speakeasy').settings.safeCustomCss %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
-    <title>{{ element.title ?? 'Protected'|t('sesame') }}</title>
+    <title>{{ element.title ?? 'Protected'|t('speakeasy') }}</title>
     <style>
-        {{ constant('bensomething\\sesame\\models\\Settings::DEFAULT_CSS') | raw }}
+        {{ constant('bensomething\\speakeasy\\models\\Settings::DEFAULT_CSS') | raw }}
         * { box-sizing: border-box; }
         body {
             margin: 0;
@@ -19,49 +19,49 @@
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
-            font-family: var(--sesame-font);
-            background: var(--sesame-bg);
-            color: var(--sesame-fg);
+            font-family: var(--speakeasy-font);
+            background: var(--speakeasy-bg);
+            color: var(--speakeasy-fg);
         }
-        .sesame { width: 100%; max-width: 22rem; }
-        .sesame__row { display: flex; gap: .5rem; }
-        .sesame__input {
+        .speakeasy { width: 100%; max-width: 22rem; }
+        .speakeasy__row { display: flex; gap: .5rem; }
+        .speakeasy__input {
             flex: 1 1 auto;
             padding: .6rem .75rem;
-            border: 1px solid var(--sesame-input-border);
-            border-radius: var(--sesame-radius);
-            background: var(--sesame-input-bg);
+            border: 1px solid var(--speakeasy-input-border);
+            border-radius: var(--speakeasy-radius);
+            background: var(--speakeasy-input-bg);
             color: inherit;
             font-size: 1rem;
         }
-        .sesame__input:focus { outline: none; border-color: var(--sesame-input-border-focus); }
-        .sesame__button {
+        .speakeasy__input:focus { outline: none; border-color: var(--speakeasy-input-border-focus); }
+        .speakeasy__button {
             padding: .6rem 1rem;
             border: 0;
-            border-radius: var(--sesame-radius);
-            background: var(--sesame-button-bg);
-            color: var(--sesame-button-fg);
+            border-radius: var(--speakeasy-radius);
+            background: var(--speakeasy-button-bg);
+            color: var(--speakeasy-button-fg);
             font-weight: 500;
             cursor: pointer;
             font-size: 1rem;
         }
-        .sesame__button:hover { background: var(--sesame-button-bg-hover); }
-        .sesame__error { margin: .5rem 0 0; color: var(--sesame-error); font-size: .875rem; }
+        .speakeasy__button:hover { background: var(--speakeasy-button-bg-hover); }
+        .speakeasy__error { margin: .5rem 0 0; color: var(--speakeasy-error); font-size: .875rem; }
         {# Custom overrides last so they win. Breakout-sanitised in Settings. #}
-        {{ sesameCss|raw }}
+        {{ speakeasyCss|raw }}
     </style>
 </head>
 <body>
-    <form class="sesame" method="post" accept-charset="utf-8">
-        <input type="hidden" name="action" value="sesame/unlock">
+    <form class="speakeasy" method="post" accept-charset="utf-8">
+        <input type="hidden" name="action" value="speakeasy/unlock">
         <input type="hidden" name="elementId" value="{{ element.id }}">
         {{ csrfInput() }}
-        <div class="sesame__row">
-            <input class="sesame__input" id="password" type="password" name="password" autocomplete="off" placeholder="{{ 'Password'|t('sesame') }}" autofocus>
-            <button class="sesame__button" type="submit">{{ 'Enter'|t('sesame') }}</button>
+        <div class="speakeasy__row">
+            <input class="speakeasy__input" id="password" type="password" name="password" autocomplete="off" placeholder="{{ 'Password'|t('speakeasy') }}" autofocus>
+            <button class="speakeasy__button" type="submit">{{ 'Enter'|t('speakeasy') }}</button>
         </div>
         {% if flashError %}
-            <p class="sesame__error">{{ flashError }}</p>
+            <p class="speakeasy__error">{{ flashError }}</p>
         {% endif %}
     </form>
 </body>

@@ -1,5 +1,5 @@
-{# @var plugin \bensomething\sesame\Plugin #}
-{# @var settings \bensomething\sesame\models\Settings #}
+{# @var plugin \bensomething\speakeasy\Plugin #}
+{# @var settings \bensomething\speakeasy\models\Settings #}
 {% requireAdmin false %}
 
 {% extends '_layouts/cp' %}
@@ -21,10 +21,10 @@
     retainScroll: true,
 }] %}
 
-{% set selectedTab = 'sesame-general' %}
+{% set selectedTab = 'speakeasy-general' %}
 {% set tabs = {
-    'sesame-general': { label: 'General' | t('sesame'), url: '#sesame-general' },
-    'sesame-appearance': { label: 'Appearance' | t('sesame'), url: '#sesame-appearance' },
+    'speakeasy-general': { label: 'General' | t('speakeasy'), url: '#speakeasy-general' },
+    'speakeasy-appearance': { label: 'Appearance' | t('speakeasy'), url: '#speakeasy-appearance' },
 } %}
 
 {% block content %}
@@ -33,13 +33,13 @@
     {{ redirectInput('settings') }}
 
     {# Full-bleed dividers, matching Craft's native `.content-pane > hr` (ours are nested a level deeper). #}
-    <style>#sesame-general hr, #sesame-appearance hr { margin-inline: calc(var(--padding) * -1); }</style>
+    <style>#speakeasy-general hr, #speakeasy-appearance hr { margin-inline: calc(var(--padding) * -1); }</style>
 
-    <div id="sesame-general" role="tabpanel" aria-labelledby="tab-sesame-general">
+    <div id="speakeasy-general" role="tabpanel" aria-labelledby="tab-speakeasy-general">
         {% namespace 'settings' %}
             {{ forms.lightswitchField({
-                label: 'Bypass for control-panel users' | t('sesame'),
-                instructions: 'Skip the unlock screen for signed-in users who can view the element in the CP (admins included). Keeps live preview usable.' | t('sesame'),
+                label: 'Bypass for control-panel users' | t('speakeasy'),
+                instructions: 'Skip the unlock screen for signed-in users who can view the element in the CP (admins included). Keeps live preview usable.' | t('speakeasy'),
                 id: 'bypassForCpUsers',
                 name: 'bypassForCpUsers',
                 on: settings.bypassForCpUsers,
@@ -47,8 +47,8 @@
             }) }}
 
             {{ forms.textField({
-                label: 'Unlock duration (seconds)' | t('sesame'),
-                instructions: 'How long an unlock lasts before the visitor has to enter the password again. Set to 0 to keep it for the whole browsing session.' | t('sesame'),
+                label: 'Unlock duration (seconds)' | t('speakeasy'),
+                instructions: 'How long an unlock lasts before the visitor has to enter the password again. Set to 0 to keep it for the whole browsing session.' | t('speakeasy'),
                 id: 'unlockDurationSeconds',
                 name: 'unlockDurationSeconds',
                 value: settings.unlockDurationSeconds,
@@ -61,8 +61,8 @@
             <hr>
 
             {{ forms.textField({
-                label: 'Max unlock attempts' | t('sesame'),
-                instructions: 'Failed attempts per visitor IP + element before a lockout. Set to 0 to disable rate limiting.' | t('sesame'),
+                label: 'Max unlock attempts' | t('speakeasy'),
+                instructions: 'Failed attempts per visitor IP + element before a lockout. Set to 0 to disable rate limiting.' | t('speakeasy'),
                 id: 'maxAttempts',
                 name: 'maxAttempts',
                 value: settings.maxAttempts,
@@ -73,8 +73,8 @@
             }) }}
 
             {{ forms.textField({
-                label: 'Lockout window (seconds)' | t('sesame'),
-                instructions: 'How long a lockout lasts and how long failed attempts are counted.' | t('sesame'),
+                label: 'Lockout window (seconds)' | t('speakeasy'),
+                instructions: 'How long a lockout lasts and how long failed attempts are counted.' | t('speakeasy'),
                 id: 'attemptWindowSeconds',
                 name: 'attemptWindowSeconds',
                 value: settings.attemptWindowSeconds,
@@ -86,11 +86,11 @@
         {% endnamespace %}
     </div>
 
-    <div id="sesame-appearance" class="hidden" role="tabpanel" aria-labelledby="tab-sesame-appearance">
+    <div id="speakeasy-appearance" class="hidden" role="tabpanel" aria-labelledby="tab-speakeasy-appearance">
         {% namespace 'settings' %}
             {{ forms.autosuggestField({
-                label: 'Unlock template' | t('sesame'),
-                instructions: 'A site template to render for the unlock screen instead of the bundled default. It receives an `element` variable and must post to the `sesame/unlock` action. When set, the CSS below is ignored — your template owns its own styling.' | t('sesame'),
+                label: 'Unlock template' | t('speakeasy'),
+                instructions: 'A site template to render for the unlock screen instead of the bundled default. It receives an `element` variable and must post to the `speakeasy/unlock` action. When set, the CSS below is ignored — your template owns its own styling.' | t('speakeasy'),
                 id: 'template',
                 name: 'template',
                 value: settings.template,
@@ -105,22 +105,22 @@
                posted, so the stored CSS is retained and returns if the template is
                later cleared. #}
             {% set hasTemplate = settings.template is not empty %}
-            {% set defaultCss = constant('bensomething\\sesame\\models\\Settings::DEFAULT_CSS') %}
-            {% set sesameVars = [
-                '--sesame-bg', '--sesame-fg', '--sesame-input-bg', '--sesame-input-border',
-                '--sesame-input-border-focus', '--sesame-button-bg', '--sesame-button-fg',
-                '--sesame-button-bg-hover', '--sesame-error', '--sesame-radius', '--sesame-font',
+            {% set defaultCss = constant('bensomething\\speakeasy\\models\\Settings::DEFAULT_CSS') %}
+            {% set speakeasyVars = [
+                '--speakeasy-bg', '--speakeasy-fg', '--speakeasy-input-bg', '--speakeasy-input-border',
+                '--speakeasy-input-border-focus', '--speakeasy-button-bg', '--speakeasy-button-fg',
+                '--speakeasy-button-bg-hover', '--speakeasy-error', '--speakeasy-radius', '--speakeasy-font',
             ] %}
             {% set cssField = {
-                label: 'Unlock screen CSS' | t('sesame'),
-                instructions: "The bundled unlock screen's default styles — edit a value to restyle it, or clear the field to restore the defaults. Ignored when a custom Unlock template is set." | t('sesame'),
+                label: 'Unlock screen CSS' | t('speakeasy'),
+                instructions: "The bundled unlock screen's default styles — edit a value to restyle it, or clear the field to restore the defaults. Ignored when a custom Unlock template is set." | t('speakeasy'),
                 id: 'customCss',
                 name: 'customCss',
                 value: settings.customCss ?: (hasTemplate ? '' : defaultCss),
                 rows: 24,
                 class: 'code',
                 disabled: hasTemplate,
-                warning: hasTemplate ? 'This is being overridden by the **Unlock template** setting above.' | t('sesame') : null,
+                warning: hasTemplate ? 'This is being overridden by the **Unlock template** setting above.' | t('speakeasy') : null,
                 errors: settings.getErrors('customCss'),
             } %}
 
@@ -137,9 +137,9 @@
             {# Variable reference, below the editor — copyable pills, like field handles.
                Keep in sync with Settings::DEFAULT_CSS. #}
             <div style="margin-top: 5px;">
-                <div class="light">{{ 'Available variables:' | t('sesame') }}</div>
+                <div class="light">{{ 'Available variables:' | t('speakeasy') }}</div>
                 <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
-                    {% for v in sesameVars %}
+                    {% for v in speakeasyVars %}
                         <craft-copy-attribute class="copytextbtn" value="{{ v }}">{{ v }}</craft-copy-attribute>
                     {% endfor %}
                 </div>

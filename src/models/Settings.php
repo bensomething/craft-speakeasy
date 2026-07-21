@@ -1,6 +1,6 @@
 <?php
 
-namespace bensomething\sesame\models;
+namespace bensomething\speakeasy\models;
 
 use craft\base\Model;
 
@@ -15,29 +15,29 @@ class Settings extends Model
     public const DEFAULT_CSS = <<<'CSS'
 :root {
     color-scheme: light dark;
-    --sesame-bg: #fafafa;
-    --sesame-fg: #1a1a1a;
-    --sesame-input-bg: #fff;
-    --sesame-input-border: #cbcbcb;
-    --sesame-input-border-focus: #555;
-    --sesame-button-bg: #1a1a1a;
-    --sesame-button-fg: #fff;
-    --sesame-button-bg-hover: #333;
-    --sesame-error: #c0392b;
-    --sesame-radius: .375rem;
-    --sesame-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --speakeasy-bg: #fafafa;
+    --speakeasy-fg: #1a1a1a;
+    --speakeasy-input-bg: #fff;
+    --speakeasy-input-border: #cbcbcb;
+    --speakeasy-input-border-focus: #555;
+    --speakeasy-button-bg: #1a1a1a;
+    --speakeasy-button-fg: #fff;
+    --speakeasy-button-bg-hover: #333;
+    --speakeasy-error: #c0392b;
+    --speakeasy-radius: .375rem;
+    --speakeasy-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --sesame-bg: #0d0d0d;
-        --sesame-fg: #e8e8e8;
-        --sesame-input-bg: #1a1a1a;
-        --sesame-input-border: #333;
-        --sesame-input-border-focus: #888;
-        --sesame-button-bg: #e8e8e8;
-        --sesame-button-fg: #0d0d0d;
-        --sesame-button-bg-hover: #fff;
+        --speakeasy-bg: #0d0d0d;
+        --speakeasy-fg: #e8e8e8;
+        --speakeasy-input-bg: #1a1a1a;
+        --speakeasy-input-border: #333;
+        --speakeasy-input-border-focus: #888;
+        --speakeasy-button-bg: #e8e8e8;
+        --speakeasy-button-fg: #0d0d0d;
+        --speakeasy-button-bg-hover: #fff;
     }
 }
 CSS;
