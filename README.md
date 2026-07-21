@@ -2,6 +2,9 @@
 
 Per-element password protection for Craft CMS. Add a **Password** field to an element type's field layout, and once a password has been set, anonymous visitors get an unlock screen until they enter it. Passwords are **encrypted at rest** with your project security key.
 
+> [!NOTE]
+> **Sesame is in beta.** It's feature-complete and safe to try, but the API, settings, and stored-value formats may still change before 1.0.0. Please [report anything you hit](https://github.com/bensomething/craft-sesame/issues).
+
 > **These are shared access passwords, not user credentials.** They're reversibly encrypted so editors can view and share them, deliberately *not* one-way hashed like a login password. Sesame gates a page behind a shared passphrase, it doesn't authenticate individual users. If you need per-user login, use Craft's user accounts.
 
 ## Why Sesame
@@ -18,10 +21,10 @@ Craft CMS 5.10+ and PHP 8.2+.
 ## Installation
 
 ```bash
-composer require bensomething/craft-sesame:^1.0.0-beta.1@beta
+composer require bensomething/craft-sesame:^1.0.0-beta
 ```
 
-Sesame is in beta, so the `@beta` flag is needed to install it under a project's default `stable` minimum stability.
+The `-beta` in the constraint is what lets Composer install it under a project's default `stable` minimum stability.
 
 ## Usage
 
