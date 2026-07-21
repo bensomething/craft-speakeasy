@@ -90,7 +90,7 @@
         {% namespace 'settings' %}
             {{ forms.autosuggestField({
                 label: 'Unlock template' | t('speakeasy'),
-                instructions: 'A site template to render for the unlock screen instead of the bundled default. It receives an `element` variable and must post to the `speakeasy/unlock` action. When set, the CSS below is ignored — your template owns its own styling.' | t('speakeasy'),
+                instructions: 'A site template to render for the unlock screen instead of the bundled default. It receives an `element` variable and must post to the `speakeasy/unlock` action. When set, the CSS below is ignored.' | t('speakeasy'),
                 id: 'template',
                 name: 'template',
                 value: settings.template,

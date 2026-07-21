@@ -42,7 +42,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
     public function getSettingsHtml(): ?string
     {
         $warning = Html::tag('blockquote', Html::tag('p', Craft::t('speakeasy',
-            "Speakeasy gates a protected element's own page. Content you output elsewhere — listings, relations, the Element API — is not gated; that's up to your templates."
+            "Speakeasy gates a protected element's own page. Content you output elsewhere (listings, relations, the Element API) is not gated, that's up to your templates."
         )), ['class' => ['note', 'warning']]);
 
         $toggle = Cp::lightswitchFieldHtml([

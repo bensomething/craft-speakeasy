@@ -1,6 +1,6 @@
 # Speakeasy
 
-Per-element password protection for Craft CMS. Add a **Password** field to an element type's field layout, and once a password has been set, anonymous visitors get an unlock screen until they enter it. Passwords are **encrypted at rest** with your project security key.
+Per-element password protection for Craft CMS. Add a **Password** field to an entry type's field layout, and once a password has been set, anonymous visitors get an unlock screen until they enter it. Passwords are **encrypted at rest** with your project security key.
 
 > [!NOTE]
 > **Speakeasy is in beta.** It's feature-complete and safe to try, but the API, settings, and stored-value formats may still change before 1.0.0. Please [report anything you hit](https://github.com/bensomething/craft-speakeasy/issues).
@@ -44,6 +44,7 @@ This never reveals or decrypts the password, it only checks whether one is set.
 ## What it protects (and doesn't)
 
 - **Gates the element's own template-rendered URL:** Entries, categories, and custom element types with a template. The field is hidden from the layout designer for assets, users, and global sets, which have no such URL. Placement can't be fully blocked (inline creation, project config), so on a non-gateable element the field warns that a password has no effect.
+- **Not element-less routes:** Pages rendered by a custom route or a standalone template, with no element behind them, have nothing to hold a password and so can't be gated. Protection is tied to the element it protects, by design. The password lives on the same record as the content.
 - **Not static files:** Assets are served without Craft in the request, so the gate never runs. Protecting them is a separate problem, the usual approach is a private filesystem with a controller that authorises and streams each file.
 - **Not other queries:** A protected element's fields shown in a listing, relation, eager-loaded loop, GraphQL, or the Element API are not gated, that's up to your templates (see [Note on GraphQL and the API](#note-on-graphql-and-the-api)).
 - **Never outputs the password:** `{{ entry.<handle> }}` prints `••••••••`, and the value is kept out of the search index and GraphQL schema. Twig can't unwrap it either, templates only ever get the mask. The plaintext is reachable only from Speakeasy's own PHP, which the gate uses to compare.
@@ -67,7 +68,7 @@ Settings are split across two tabs. **General:**
 | Setting | Default | Purpose |
 | --- | --- | --- |
 | Unlock template | *(bundled)* | Override the unlock screen with your own site template |
-| Unlock screen CSS | *(empty)* | Restyle the bundled screen by overriding its CSS variables |
+| Unlock screen CSS | *(bundled variables)* | Restyle the bundled screen by overriding its CSS variables |
 
 ### Restyling the bundled screen
 
