@@ -146,7 +146,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
                 'value' => $display,
                 'disabled' => true,
                 'autocomplete' => 'off',
-                'class' => ['text', 'fullwidth'],
+                'class' => ['text', 'fullwidth', 'code'],
             ]),
             ['data-sesame-field' => true],
         );
@@ -225,7 +225,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
             'data-1p-ignore' => 'true',
             'aria-describedby' => $warningText !== null ? $warningId : null,
             'disabled' => $inline,
-            'class' => ['text', 'fullwidth'],
+            'class' => ['text', 'fullwidth', 'code'],
             'style' => $showToggle ? ['padding-right' => '1.75rem'] : [],
         ]);
 

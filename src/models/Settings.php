@@ -3,6 +3,7 @@
 namespace bensomething\sesame\models;
 
 use craft\base\Model;
+
 class Settings extends Model
 {
     /**
@@ -43,6 +44,7 @@ CSS;
 
     public int $maxAttempts = 5;
     public int $attemptWindowSeconds = 300;
+    public int $unlockDurationSeconds = 0;
     public string $template = '';
     public string $customCss = '';
     public bool $bypassForCpUsers = true;
@@ -50,7 +52,7 @@ CSS;
     public function rules(): array
     {
         return [
-            [['maxAttempts', 'attemptWindowSeconds'], 'integer', 'min' => 0],
+            [['maxAttempts', 'attemptWindowSeconds', 'unlockDurationSeconds'], 'integer', 'min' => 0],
             [['template', 'customCss'], 'string'],
             [['bypassForCpUsers'], 'boolean'],
         ];

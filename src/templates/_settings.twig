@@ -46,6 +46,18 @@
                 errors: settings.getErrors('bypassForCpUsers'),
             }) }}
 
+            {{ forms.textField({
+                label: 'Unlock duration (seconds)' | t('sesame'),
+                instructions: 'How long an unlock lasts before the visitor has to enter the password again. Set to 0 to keep it for the whole browsing session.' | t('sesame'),
+                id: 'unlockDurationSeconds',
+                name: 'unlockDurationSeconds',
+                value: settings.unlockDurationSeconds,
+                size: 8,
+                type: 'number',
+                min: 0,
+                errors: settings.getErrors('unlockDurationSeconds'),
+            }) }}
+
             <hr>
 
             {{ forms.textField({

@@ -43,6 +43,7 @@ This never reveals or decrypts the password, it only checks whether one is set.
 - **Not other queries:** A protected element's fields shown in a listing, relation, eager-loaded loop, GraphQL, or the Element API are not gated, that's up to your templates (see [Note on GraphQL and the API](#note-on-graphql-and-the-api)).
 - **Never outputs the password:** `{{ entry.<handle> }}` prints `••••••••`, and the value is kept out of the search index and GraphQL schema. Twig can't unwrap it either, templates only ever get the mask. The plaintext is reachable only from Sesame's own PHP, which the gate uses to compare.
 - **Fail-closed on key loss:** If the security key is rotated or lost, existing passwords can't be decrypted and those elements stay locked. Re-enter passwords after a key change.
+- **Unlocks live in the visitor's session:** They end when the browser closes, and PHP may expire an idle session sooner (`session.gc_maxlifetime`, often 24 minutes). Unlock duration sets an upper bound on top of that, it can't extend an unlock beyond the session itself, so an unlock lasts for whichever ends first.
 - **Rate-limited per IP + element:** Behind a proxy or CDN, make sure Craft is configured to see the real client IP. Rate limiting relies on Craft's cache — a null/dummy cache driver disables the lockout.
 
 ## Settings
@@ -52,6 +53,7 @@ Settings are split across two tabs. **General:**
 | Setting | Default | Purpose |
 | --- | --- | --- |
 | Bypass for CP users | on | Signed-in users who can view the element skip the gate |
+| Unlock duration | 0 | How long an unlock lasts, in seconds (0 = the whole browsing session) |
 | Max unlock attempts | 5 | Failed tries per IP + element before lockout (0 disables) |
 | Lockout window | 300s | Lockout duration / attempt-count expiry |
 

@@ -19,7 +19,7 @@ use yii\base\Component;
 class Gate extends Component
 {
     // Unlocking is keyed by password hash, not element, so elements sharing a
-    // password unlock together.
+    // password unlock together. Values are the unlock timestamp.
     public const SESSION_KEY = 'sesame.unlocked';
 
     public function getPassword(ElementInterface $element): ?string
@@ -43,24 +43,47 @@ class Gate extends Component
 
     public function isUnlocked(string $password): bool
     {
-        $tokens = Craft::$app->getSession()->get(self::SESSION_KEY, []);
-        return in_array($this->token($password), $tokens, true);
+        $unlockedAt = $this->tokens()[$this->token($password)] ?? null;
+        if ($unlockedAt === null) {
+            return false;
+        }
+
+        $duration = Plugin::getInstance()->getSettings()->unlockDurationSeconds;
+        return $duration <= 0 || $unlockedAt + $duration > time();
     }
 
     public function unlock(string $password): void
     {
-        $session = Craft::$app->getSession();
-        $tokens = $session->get(self::SESSION_KEY, []);
-        $token = $this->token($password);
-        if (!in_array($token, $tokens, true)) {
-            $tokens[] = $token;
-            $session->set(self::SESSION_KEY, $tokens);
-        }
+        $tokens = $this->tokens();
+        $tokens[$this->token($password)] = time();
+        Craft::$app->getSession()->set(self::SESSION_KEY, $tokens);
     }
 
+    /**
+     * Unlock tokens from the session, dropping anything that isn't a
+     * token => timestamp pair (stale data from an older storage format).
+     */
+    private function tokens(): array
+    {
+        $tokens = Craft::$app->getSession()->get(self::SESSION_KEY, []);
+        if (!is_array($tokens)) {
+            return [];
+        }
+
+        return array_filter(
+            $tokens,
+            fn($unlockedAt, $token) => is_string($token) && is_int($unlockedAt),
+            ARRAY_FILTER_USE_BOTH,
+        );
+    }
+
+    /**
+     * Keyed with the security key so a leaked session store can't be run
+     * against a wordlist to recover the passwords themselves.
+     */
     private function token(string $password): string
     {
-        return hash('sha256', $password);
+        return hash_hmac('sha256', $password, Craft::$app->getConfig()->getGeneral()->securityKey);
     }
 
     public function handleBeforeRenderPageTemplate(TemplateEvent $event): void
