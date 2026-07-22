@@ -13,7 +13,7 @@ use craft\models\GqlSchema;
 use craft\web\View;
 
 /**
- * Speakeasy Password — a reversibly-encrypted field whose value gates front-end
+ * Speakeasy Password. A reversibly-encrypted field whose value gates front-end
  * access to the element (see the Gate service).
  *
  * The input is a text field masked with bullets via JS rather than a real
@@ -65,11 +65,10 @@ class PasswordField extends Field implements PreviewableFieldInterface
             return null;
         }
 
-        // From the database: encrypted + base64-encoded. Decrypt lazily — presence
-        // checks, the mask and index columns never need the plaintext, so only a
-        // guarded revealPassword() pays for it. If decode/decrypt fails (e.g. the
-        // security key changed), keep the raw value so the element stays locked
-        // rather than becoming public.
+        // From the database: encrypted + base64-encoded. Decrypt lazily, since
+        // presence checks, the mask and index columns never need the plaintext.
+        // If decode/decrypt fails (e.g. the security key changed), keep the raw
+        // value so the element stays locked rather than becoming public.
         $stored = $value;
 
         return new PasswordValue(static function() use ($stored): string {
@@ -121,20 +120,20 @@ class PasswordField extends Field implements PreviewableFieldInterface
     }
 
     /**
-     * Static (uneditable) render — e.g. when a field layout condition locks the
+     * Static (uneditable) render, e.g. when a field layout condition locks the
      * field for the current user. Craft's default runs inputHtml() through
      * Html::disableInputs(), which disables the eye button and drops its JS while
-     * leaving the decrypted value sitting in the hidden real input. That exposes
-     * the plaintext with no way to reveal it — the worst of both. Render our own
-     * masked, value-free copy instead. Read-protection belongs to the field's
-     * visibility condition; this only governs editing.
+     * leaving the decrypted value sitting in the hidden real input, exposing the
+     * plaintext with no way to reveal it. Render our own masked, value-free copy
+     * instead. Read-protection belongs to the field's visibility condition. This
+     * only governs editing.
      */
     public function getStaticHtml(mixed $value, ElementInterface $element): string
     {
         $plain = $value instanceof PasswordValue ? $value->revealPassword(new RevealToken()) : (is_string($value) ? $value : '');
 
         // With the toggle on, the value is meant to stay masked and there is no JS
-        // here to reveal it — so show the mask and keep the plaintext out of the DOM
+        // here to reveal it, so show the mask and keep the plaintext out of the DOM
         // entirely (no hidden real input). With the toggle off, the field is
         // configured to always show plain text.
         $masked = $value instanceof PasswordValue ? (string) $value : ($plain === '' ? '' : '••••••••');
@@ -162,9 +161,9 @@ class PasswordField extends Field implements PreviewableFieldInterface
     }
 
     /**
-     * Element index / card column. Never the plaintext — a client-side reveal
-     * here would mean decrypting every listed element's password into the page
-     * DOM. Just a check when a password is set, blank when not.
+     * Element index / card column. Never the plaintext, since a client-side
+     * reveal here would mean decrypting every listed element's password into
+     * the page DOM. Just a check when a password is set, blank when not.
      */
     public function getPreviewHtml(mixed $value, ElementInterface $element): string
     {
@@ -211,7 +210,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
         // Real value (submitted). Craft namespaces this to fields[handle].
         $real = Html::hiddenInput($this->handle, $current, ['data-speakeasy-real' => true]);
 
-        // Display copy (not submitted); masked with bullets unless revealed.
+        // Display copy, not submitted. Masked with bullets unless revealed.
         $display = Html::tag('input', '', [
             'type' => 'text',
             'id' => $this->getInputId(),

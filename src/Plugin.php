@@ -20,7 +20,7 @@ use craft\web\View;
 use yii\base\Event;
 
 /**
- * Speakeasy — per-element password protection.
+ * Speakeasy. Per-element password protection.
  *
  * Add a Speakeasy Password field to the field layout of any element type with
  * template-rendered URLs (entries, categories, …). Once an element has a value
@@ -65,7 +65,7 @@ class Plugin extends \craft\base\Plugin
             }
         );
 
-        // Only offer the field on element types the gate can actually protect —
+        // Only offer the field on element types the gate can actually protect,
         // those with template-rendered URLs. Hide it from assets, users, global
         // sets, etc., where it would imply protection it can't deliver.
         Event::on(
@@ -102,7 +102,7 @@ class Plugin extends \craft\base\Plugin
 
     /**
      * Render settings as a full CP page (not the default fragment) so it can declare
-     * native tabs via the `tabs` variable — Craft wires those itself, no custom JS.
+     * native tabs via the `tabs` variable, which Craft wires itself, no custom JS.
      * Inputs are namespaced under `settings` to match how Craft's default plugin-
      * settings response posts them.
      */
@@ -116,7 +116,7 @@ class Plugin extends \craft\base\Plugin
             'settings' => $this->getSettings(),
             // Progressive enhancement: if nystudio107/craft-code-editor is present
             // (it ships with the first-party CKEditor plugin, among others), give the
-            // CSS field a Monaco editor. Otherwise fall back to a plain textarea — no
+            // CSS field a Monaco editor. Otherwise fall back to a plain textarea. No
             // hard dependency, no Monaco footprint forced on installs that lack it.
             'hasCodeEditor' => class_exists('nystudio107\\codeeditor\\CodeEditor'),
         ]);

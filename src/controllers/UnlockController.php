@@ -58,7 +58,7 @@ class UnlockController extends Controller
     /**
      * Atomically increments the attempt counter and returns the new total. The
      * read-modify-write is serialized with a mutex so concurrent attempts each
-     * count; if the lock can't be acquired, it fails safe (treats as over limit).
+     * count. If the lock can't be acquired, it fails safe (treats as over limit).
      */
     private function bumpAttempts(string $key, int $ttl): int
     {

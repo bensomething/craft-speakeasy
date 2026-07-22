@@ -75,10 +75,13 @@ class SettingsTest extends TestCase
 
     public function testDefaultCssDefinesTheVariablesTheUnlockTemplateUses(): void
     {
-        $template = file_get_contents(dirname(__DIR__, 2) . '/src/templates/_unlock.twig');
-        $this->assertIsString($template);
+        // Scan every unlock template, not just the entry file, so the check
+        // survives the styles/form partials being split out or renamed.
+        $templates = glob(dirname(__DIR__, 2) . '/src/templates/_unlock*.twig');
+        $this->assertNotEmpty($templates, 'No unlock templates found');
+        $markup = implode('', array_map('file_get_contents', $templates));
 
-        preg_match_all('/var\(\s*(--speakeasy-[a-z0-9-]+)/i', $template, $matches);
+        preg_match_all('/var\(\s*(--speakeasy-[a-z0-9-]+)/i', $markup, $matches);
         $used = array_unique($matches[1]);
         $this->assertNotEmpty($used, 'No CSS variables found in the unlock template');
 

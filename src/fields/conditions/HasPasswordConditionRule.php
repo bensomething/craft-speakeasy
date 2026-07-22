@@ -8,7 +8,7 @@ use craft\fields\conditions\FieldConditionRuleInterface;
 use craft\fields\conditions\FieldConditionRuleTrait;
 
 /**
- * Index/entry filter for the Speakeasy Password field — a lightswitch matching
+ * Index/entry filter for the Speakeasy Password field. A lightswitch matching
  * elements that have a password set (on) or don't (off). The stored value is
  * encrypted, so this only ever tests presence via :notempty:/:empty:, never the
  * password itself.

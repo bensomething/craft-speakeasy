@@ -7,10 +7,10 @@ use craft\base\Model;
 class Settings extends Model
 {
     /**
-     * Default CSS variables for the bundled unlock screen — the single source of
-     * truth for them. The _unlock template emits this block, and the settings field
-     * is seeded with it so editors start from the real values. Anything they change
-     * is injected after this block, overriding it.
+     * Default CSS variables for the bundled unlock screen, and the single source
+     * of truth for them. The _unlock template emits this block, and the settings
+     * field is seeded with it so editors start from the real values. Anything they
+     * change is injected after this block, overriding it.
      */
     public const DEFAULT_CSS = <<<'CSS'
 :root {
@@ -61,7 +61,7 @@ CSS;
     /**
      * Custom CSS for the bundled unlock screen, with any `</style>` breakout
      * neutralised so it can't inject markup into that anonymous page. CSS never
-     * needs a literal `<`; escaping it to its CSS code point renders identically
+     * needs a literal `<`. Escaping it to its CSS code point renders identically
      * inside `content:` strings while making a closing tag impossible.
      */
     public function getSafeCustomCss(): string

@@ -6,10 +6,10 @@ use Closure;
 use Stringable;
 
 /**
- * Wraps a Speakeasy password so it isn't accidentally exposed. In string context —
- * `{{ entry.field }}`, logs, element index columns — it renders a fixed mask,
+ * Wraps a Speakeasy password so it isn't accidentally exposed. In string context
+ * (`{{ entry.field }}`, logs, element index columns) it renders a fixed mask,
  * never the real value. The plaintext is reachable only by passing a RevealToken,
- * which Speakeasy's own code holds but a Twig template can't produce — so
+ * which Speakeasy's own code holds but a Twig template can't produce, so
  * `{{ entry.field.revealPassword }}` and generated-field templates get the mask.
  *
  * A value loaded from the database is held as ciphertext and decrypted lazily on
@@ -58,7 +58,7 @@ class PasswordValue implements Stringable
     public function isEmpty(): bool
     {
         // Only ever constructed for a stored value, so an unresolved (lazy) value
-        // is set; a resolved one reflects its actual plaintext.
+        // is set. A resolved one reflects its actual plaintext.
         return $this->plain === '';
     }
 
