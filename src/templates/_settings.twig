@@ -197,7 +197,7 @@
                    and return if the template is later cleared. #}
                 <p class="warning has-icon">
                     <span class="icon" aria-hidden="true"></span>
-                    <span>{{ 'This is being overridden by the **Unlock template** setting above.' | t('speakeasy') }}</span>
+                    <span>{{ 'This is being overridden by the **Custom unlock template** setting above.' | t('speakeasy') | md(inlineOnly=true) | raw }}</span>
                 </p>
             {% else %}
             {# The bundled screen's editable copy. Each drives the matching element in
