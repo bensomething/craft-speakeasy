@@ -3,6 +3,11 @@
    that would steal the cursor from the CP behind the iframe. #}
 {% set preview = preview ?? false %}
 {% set flashError = flashError ?? null %}
+{% set settings = craft.app.plugins.getPlugin('speakeasy').settings %}
+{# Callers may override these (the preview passes tokens it swaps live). Otherwise
+   fall back to the stored setting, then to the translatable bundled default. #}
+{% set placeholderText = placeholderText ?? (settings.placeholderText ?: 'Password' | t('speakeasy')) %}
+{% set buttonText = buttonText ?? (settings.buttonText ?: 'Enter' | t('speakeasy')) %}
 <form class="speakeasy"{% if not preview %} method="post" accept-charset="utf-8"{% endif %}>
     {% if not preview %}
         <input type="hidden" name="action" value="speakeasy/unlock">
@@ -10,10 +15,10 @@
         {{ csrfInput() }}
     {% endif %}
     <div class="speakeasy__row">
-        <input class="speakeasy__input" type="password" name="password" autocomplete="off" placeholder="{{ 'Password'|t('speakeasy') }}"
+        <input class="speakeasy__input" type="password" name="password" autocomplete="off" placeholder="{{ placeholderText }}"
             {%- if preview %} tabindex="-1" aria-hidden="true"{% else %} id="password" autofocus{% endif %}>
         <button class="speakeasy__button" type="{{ preview ? 'button' : 'submit' }}"
-            {%- if preview %} tabindex="-1" aria-hidden="true"{% endif %}>{{ 'Enter'|t('speakeasy') }}</button>
+            {%- if preview %} tabindex="-1" aria-hidden="true"{% endif %}>{{ buttonText }}</button>
     </div>
     {% if flashError %}
         <p class="speakeasy__error">{{ flashError }}</p>

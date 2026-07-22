@@ -25,7 +25,7 @@ class Settings extends Model
     --speakeasy-button-bg-hover: #333;
     --speakeasy-error: #c0392b;
     --speakeasy-radius: .375rem;
-    --speakeasy-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --speakeasy-font: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -47,13 +47,20 @@ CSS;
     public int $unlockDurationSeconds = 0;
     public string $template = '';
     public string $customCss = '';
+    // Empty means "use the bundled default". The default strings live in the
+    // templates and the controller, run through t() so they stay translatable;
+    // storing them here would freeze that. The settings fields show them as
+    // placeholder text so an editor still sees what they're overriding.
+    public string $placeholderText = '';
+    public string $buttonText = '';
+    public string $errorText = '';
     public bool $bypassForCpUsers = true;
 
     public function rules(): array
     {
         return [
             [['maxAttempts', 'attemptWindowSeconds', 'unlockDurationSeconds'], 'integer', 'min' => 0],
-            [['template', 'customCss'], 'string'],
+            [['template', 'customCss', 'placeholderText', 'buttonText', 'errorText'], 'string'],
             [['bypassForCpUsers'], 'boolean'],
         ];
     }

@@ -36,6 +36,16 @@
         /* Full-bleed dividers, matching Craft's native `.content-pane > hr` (ours are nested a level deeper). */
         #speakeasy-general hr, #speakeasy-appearance hr { margin-inline: calc(var(--padding) * -1); }
 
+        /* Three quarter-width fields in a row, the empty fourth column left as slack.
+           `minmax(0, …)` lets the tracks shrink below the inputs' natural width so
+           they stay even instead of blowing out. Craft gives each `.field` its own
+           margins (a bottom gap, negative insets to reach the pane edges, and top
+           spacing on any that aren't first), which stagger the row, so they're zeroed
+           and `start` keeps every field pinned to the top. */
+        .speakeasy-text-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; align-items: start; }
+        .speakeasy-text-fields > .field { margin: 0 !important; }
+        @media (max-width: 700px) { .speakeasy-text-fields { grid-template-columns: 1fr; } }
+
         /* Editor beside its preview, even split. `minmax(0, 1fr)` keeps Monaco from
            forcing its column wider than the grid track. */
         .speakeasy-css-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
@@ -158,14 +168,16 @@
 <body>
     {%- include 'speakeasy/_unlock_form.twig' with {
         preview: true,
-        flashError: 'Incorrect password.' | t('speakeasy'),
+        placeholderText: '__SPEAKEASY_PH__',
+        buttonText: '__SPEAKEASY_BTN__',
+        flashError: '__SPEAKEASY_ERR__',
     } only -%}
 </body>
 </html>{% endset %}
 
         {% namespace 'settings' %}
             {{ forms.autosuggestField({
-                label: 'Unlock template' | t('speakeasy'),
+                label: 'Custom unlock template' | t('speakeasy'),
                 instructions: 'A site template to render for the unlock screen instead of the bundled default. It receives an `element` variable and must post to the `speakeasy/unlock` action. When set, the CSS below is ignored.' | t('speakeasy'),
                 id: 'template',
                 name: 'template',
@@ -177,20 +189,50 @@
             <hr>
 
             {% set hasTemplate = settings.template is not empty %}
+            <h2>Bundled unlock template</h2>
+
+            {% if hasTemplate %}
+                {# A custom template owns the whole screen, so nothing bundled applies.
+                   The fields simply aren't rendered; their stored values stay untouched
+                   and return if the template is later cleared. #}
+                <p class="warning has-icon">
+                    <span class="icon" aria-hidden="true"></span>
+                    <span>{{ 'This is being overridden by the **Unlock template** setting above.' | t('speakeasy') }}</span>
+                </p>
+            {% else %}
+            {# The bundled screen's editable copy. Each drives the matching element in
+               `_unlock_form.twig`; the error text is what the controller flashes on a
+               wrong password. Laid out a quarter-width each in one row. #}
+            <div class="speakeasy-text-fields">
+                {{ forms.textField({
+                    label: 'Placeholder text' | t('speakeasy'),
+                    id: 'placeholderText',
+                    name: 'placeholderText',
+                    value: settings.placeholderText,
+                    placeholder: 'Password' | t('speakeasy'),
+                    errors: settings.getErrors('placeholderText'),
+                }) }}
+                {{ forms.textField({
+                    label: 'Button text' | t('speakeasy'),
+                    id: 'buttonText',
+                    name: 'buttonText',
+                    value: settings.buttonText,
+                    placeholder: 'Enter' | t('speakeasy'),
+                    errors: settings.getErrors('buttonText'),
+                }) }}
+                {{ forms.textField({
+                    label: 'Error text' | t('speakeasy'),
+                    id: 'errorText',
+                    name: 'errorText',
+                    value: settings.errorText,
+                    placeholder: 'Incorrect password' | t('speakeasy'),
+                    errors: settings.getErrors('errorText'),
+                }) }}
+            </div>
+
             {% set cssLabel = 'Unlock screen CSS' | t('speakeasy') %}
             {% set cssInstructions = "The bundled unlock screen's default styles. Edit a value to restyle it, or clear the field to restore the defaults." | t('speakeasy') %}
 
-            {% if hasTemplate %}
-                {# A custom template owns its styling, so there's nothing here to edit or
-                   preview. Rendering an empty input leaves Craft's warning sitting directly
-                   under the instructions. The field going unposted is what retains the
-                   stored CSS, so it returns if the template is later cleared. #}
-                {{ forms.field({
-                    label: cssLabel,
-                    instructions: cssInstructions,
-                    warning: 'This is being overridden by the **Unlock template** setting above.' | t('speakeasy'),
-                }, '') }}
-            {% else %}
                 {% set defaultCss = constant('bensomething\\speakeasy\\models\\Settings::DEFAULT_CSS') %}
                 {% set speakeasyVars = [
                     '--speakeasy-bg', '--speakeasy-fg', '--speakeasy-input-bg', '--speakeasy-input-border',
@@ -282,10 +324,24 @@
 
                     var shell = {{ previewShell | json_encode | raw }};
                     var mode = tab.querySelector('.speakeasy-preview__mode');
+                    // The three copy fields. Each falls back to its own placeholder, which
+                    // holds the bundled default, so an empty field previews that default.
+                    var textFields = {
+                        '__SPEAKEASY_PH__': tab.querySelector('[name*="placeholderText"]'),
+                        '__SPEAKEASY_BTN__': tab.querySelector('[name*="buttonText"]'),
+                        '__SPEAKEASY_ERR__': tab.querySelector('[name*="errorText"]'),
+                    };
                     var SCHEME_QUERY = /\(\s*prefers-color-scheme\s*:\s*(dark|light)\s*\)/gi;
                     var ALWAYS = '(min-width: 0px)';
                     var NEVER = '(max-width: 0px)';
                     var rendered = null;
+
+                    // These land in an attribute and in element text, so escape for HTML,
+                    // not the CSS `<`-only escape used for the stylesheet.
+                    function escapeHtml(s) {
+                        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                    }
 
                     // A media query can't be overridden from outside, so force a scheme by
                     // rewriting the query itself into one that always or never matches.
@@ -303,7 +359,15 @@
                         var css = field.value;
                         var showError = errorToggle.checked;
                         var wanted = mode.value;
+
+                        // Resolve each copy field to its value or, when blank, its default.
+                        var text = {};
                         var key = wanted + (showError ? '1' : '0') + css;
+                        for (var token in textFields) {
+                            var el = textFields[token];
+                            text[token] = el ? (el.value || el.placeholder) : '';
+                            key += '\x00' + text[token];
+                        }
                         if (key === rendered) {
                             return;
                         }
@@ -320,6 +384,13 @@
                         var doc = shell.replace('/*__SPEAKEASY_CUSTOM_CSS__*/', function() {
                             return safe;
                         });
+
+                        // Swap the copy tokens for the live, HTML-escaped values.
+                        for (var t in text) {
+                            doc = doc.replace(t, (function(v) {
+                                return function() { return escapeHtml(v); };
+                            })(text[t]));
+                        }
 
                         // Nothing to switch between unless the CSS defines a scheme block,
                         // though the scheme is pinned either way so the preview never drifts
@@ -340,6 +411,11 @@
                     field.addEventListener('input', render);
                     errorToggle.addEventListener('change', render);
                     mode.addEventListener('change', render);
+                    for (var token in textFields) {
+                        if (textFields[token]) {
+                            textFields[token].addEventListener('input', render);
+                        }
+                    }
                     setInterval(render, 250);
                     render();
                 })();

@@ -51,7 +51,8 @@ class UnlockController extends Controller
             return $this->redirect($element->getUrl());
         }
 
-        Craft::$app->getSession()->setError(Craft::t('speakeasy', 'Incorrect password.'));
+        $error = $settings->errorText !== '' ? $settings->errorText : Craft::t('speakeasy', 'Incorrect password');
+        Craft::$app->getSession()->setError($error);
         return $this->redirect($element->getUrl());
     }
 
