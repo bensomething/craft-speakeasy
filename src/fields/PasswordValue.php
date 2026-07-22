@@ -20,10 +20,14 @@ class PasswordValue implements Stringable
 {
     private ?string $plain;
     private ?Closure $resolver;
+    private bool $undecryptable = false;
 
     /**
-     * Pass a plain string for a value entered in the editor, or a Closure that
-     * returns the plaintext (e.g. decrypts stored ciphertext) to defer the work.
+     * Pass a plain string for a value entered in the editor, or a Closure to defer
+     * the work of decrypting a stored value. The Closure returns the resolved
+     * string and whether it decrypted, as `[$value, $decrypted]`.
+     *
+     * @param string|Closure(): array{string, bool} $value
      */
     public function __construct(string|Closure $value)
     {
@@ -37,6 +41,19 @@ class PasswordValue implements Stringable
     }
 
     /**
+     * A stored value already known not to decrypt, wrapped without re-checking.
+     * Used when an untouched undecryptable value is posted back by the editor,
+     * so it can be written away again exactly as it was found.
+     */
+    public static function undecryptable(string $stored): self
+    {
+        $value = new self($stored);
+        $value->undecryptable = true;
+
+        return $value;
+    }
+
+    /**
      * Unwrap the plaintext, resolving a deferred value on first use. Twig invokes
      * accessors with no arguments, so a template call falls through to the mask;
      * only a caller holding a RevealToken (i.e. Speakeasy itself) gets the real value.
@@ -47,12 +64,34 @@ class PasswordValue implements Stringable
             return (string) $this;
         }
 
-        if ($this->plain === null && $this->resolver !== null) {
-            $this->plain = ($this->resolver)();
-            $this->resolver = null;
-        }
+        $this->resolve();
 
         return $this->plain ?? '';
+    }
+
+    /**
+     * Whether the stored value couldn't be decrypted, which means the security key
+     * has changed since it was saved and the original password is unrecoverable.
+     * The value is kept (so the element stays gated) but it's ciphertext, not a
+     * password anyone set, and the editor needs to replace it.
+     *
+     * Resolving is required to know this, but no plaintext is handed out, so this
+     * stays safe to call from the CP without a reveal token.
+     */
+    public function isUndecryptable(): bool
+    {
+        $this->resolve();
+
+        return $this->undecryptable;
+    }
+
+    private function resolve(): void
+    {
+        if ($this->plain === null && $this->resolver !== null) {
+            [$this->plain, $decrypted] = ($this->resolver)();
+            $this->undecryptable = !$decrypted;
+            $this->resolver = null;
+        }
     }
 
     public function isEmpty(): bool

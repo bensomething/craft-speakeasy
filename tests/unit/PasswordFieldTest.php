@@ -76,6 +76,15 @@ class PasswordFieldTest extends TestCase
         $this->assertSame('', (new PasswordField())->getSearchKeywords(new PasswordValue('hunter2'), $element));
     }
 
+    /**
+     * A second instance of the same field would be inert, since only the first
+     * Password field in a layout gates the element.
+     */
+    public function testTheFieldCannotBePlacedTwiceInALayout(): void
+    {
+        $this->assertFalse(PasswordField::isMultiInstance());
+    }
+
     public function testTheFieldFiltersByPresenceOnly(): void
     {
         $this->assertSame(HasPasswordConditionRule::class, (new PasswordField())->getElementConditionRuleType());

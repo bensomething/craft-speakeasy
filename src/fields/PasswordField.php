@@ -39,6 +39,20 @@ class PasswordField extends Field implements PreviewableFieldInterface
         return 'eye-low-vision';
     }
 
+    /**
+     * Only the first Password field in a layout gates the element, so a second
+     * instance of the same field could never do anything. Craft takes an already
+     * placed field out of the layout designer's list, which stops the mistake
+     * being made rather than warning about it after the fact.
+     *
+     * Two *different* Password fields can still be placed, since Craft has no way
+     * to rule that out. inputHtml() warns on the later ones.
+     */
+    public static function isMultiInstance(): bool
+    {
+        return false;
+    }
+
     public function getSettingsHtml(): ?string
     {
         $warning = Html::tag('blockquote', Html::tag('p', Craft::t('speakeasy',
@@ -71,15 +85,15 @@ class PasswordField extends Field implements PreviewableFieldInterface
         // value so the element stays locked rather than becoming public.
         $stored = $value;
 
-        return new PasswordValue(static function() use ($stored): string {
+        return new PasswordValue(static function() use ($stored): array {
             $decoded = base64_decode($stored, true);
             if ($decoded === false) {
-                return $stored;
+                return [$stored, false];
             }
 
             $decrypted = Craft::$app->getSecurity()->decryptByKey($decoded);
 
-            return $decrypted === false ? $stored : $decrypted;
+            return $decrypted === false ? [$stored, false] : [$decrypted, true];
         });
     }
 
@@ -89,12 +103,37 @@ class PasswordField extends Field implements PreviewableFieldInterface
             return $value;
         }
 
+        // An undecryptable value posts as an array so the form can distinguish
+        // "the editor set a new password" from "the editor left the unusable one
+        // alone", without the stored ciphertext being mistaken for a plaintext
+        // password and encrypted a second time. See inputHtml().
+        if (is_array($value)) {
+            $entered = (string)($value['password'] ?? '');
+            if ($entered !== '') {
+                return new PasswordValue($entered);
+            }
+
+            $kept = (string)($value['stored'] ?? '');
+
+            return $kept !== '' ? PasswordValue::undecryptable($kept) : null;
+        }
+
         // From the edit form: already plain text.
         return is_string($value) && $value !== '' ? new PasswordValue($value) : null;
     }
 
     public function serializeValue(mixed $value, ?ElementInterface $element): mixed
     {
+        // A value that couldn't be decrypted is written back exactly as it was
+        // found. Encrypting it under the new key would turn the ciphertext into
+        // the element's actual password and lose the warning telling the editor
+        // to set a real one, so an unrelated save would quietly make it permanent.
+        if ($value instanceof PasswordValue && $value->isUndecryptable()) {
+            $stored = $value->revealPassword(new RevealToken());
+
+            return $stored === '' ? null : $stored;
+        }
+
         $plain = $value instanceof PasswordValue ? $value->revealPassword(new RevealToken()) : (is_string($value) ? $value : '');
         if ($plain === '') {
             return null;
@@ -130,14 +169,21 @@ class PasswordField extends Field implements PreviewableFieldInterface
      */
     public function getStaticHtml(mixed $value, ElementInterface $element): string
     {
-        $plain = $value instanceof PasswordValue ? $value->revealPassword(new RevealToken()) : (is_string($value) ? $value : '');
-
         // With the toggle on, the value is meant to stay masked and there is no JS
         // here to reveal it, so show the mask and keep the plaintext out of the DOM
-        // entirely (no hidden real input). With the toggle off, the field is
-        // configured to always show plain text.
-        $masked = $value instanceof PasswordValue ? (string) $value : ($plain === '' ? '' : '••••••••');
-        $display = $this->showVisibilityToggle ? $masked : $plain;
+        // entirely (no hidden real input). Masking never decrypts. With the toggle
+        // off, the field is configured to always show plain text.
+        if ($this->showVisibilityToggle || ($value instanceof PasswordValue && $value->isUndecryptable())) {
+            // Undecryptable values are masked whatever the toggle says: showing the
+            // ciphertext as plain text would present it as a password someone chose.
+            $display = $value instanceof PasswordValue
+                ? (string) $value
+                : (is_string($value) && $value !== '' ? '••••••••' : '');
+        } else {
+            $display = $value instanceof PasswordValue
+                ? $value->revealPassword(new RevealToken())
+                : (is_string($value) ? $value : '');
+        }
 
         return Html::tag('div',
             Html::tag('input', '', [
@@ -186,7 +232,14 @@ class PasswordField extends Field implements PreviewableFieldInterface
     {
         $this->registerJs();
 
-        $current = $value instanceof PasswordValue ? $value->revealPassword(new RevealToken()) : (is_string($value) ? $value : '');
+        // An undecryptable value is ciphertext, not a password anyone chose, so it
+        // isn't offered for editing. The field starts empty and the stored value
+        // rides along in its own hidden input, which keeps the element gated if the
+        // entry is saved before a replacement is set.
+        $undecryptable = $value instanceof PasswordValue && $value->isUndecryptable();
+        $stored = $undecryptable ? $value->revealPassword(new RevealToken()) : '';
+
+        $current = $undecryptable ? '' : ($value instanceof PasswordValue ? $value->revealPassword(new RevealToken()) : (is_string($value) ? $value : ''));
         $showToggle = $this->showVisibilityToggle && !$inline;
         $revealed = !$this->showVisibilityToggle;
 
@@ -196,7 +249,11 @@ class PasswordField extends Field implements PreviewableFieldInterface
         // second (or later) Password field in the same layout: only the first one
         // gates the page (see Gate::getPassword), so any extra is inert.
         $warningText = null;
-        if ($element !== null && !$element::hasUris()) {
+        if ($undecryptable) {
+            $warningText = Craft::t('speakeasy',
+                "This password can't be read because the security key has changed since it was set. The original can't be recovered, so the element stays locked until you enter a new password here."
+            );
+        } elseif ($element !== null && !$element::hasUris()) {
             $warningText = Craft::t('speakeasy',
                 'This element type has no Craft-rendered URL, setting a password will have no effect.'
             );
@@ -207,8 +264,19 @@ class PasswordField extends Field implements PreviewableFieldInterface
         }
         $warningId = $this->getInputId() . '-warning';
 
-        // Real value (submitted). Craft namespaces this to fields[handle].
-        $real = Html::hiddenInput($this->handle, $current, ['data-speakeasy-real' => true]);
+        // Real value (submitted). Craft namespaces this to fields[handle]. When the
+        // stored value can't be decrypted the field posts fields[handle][password]
+        // plus fields[handle][stored] instead, so leaving it alone re-saves the
+        // original untouched rather than re-encrypting it (see normalizeValueFromRequest).
+        $real = Html::hiddenInput(
+            $undecryptable ? "{$this->handle}[password]" : $this->handle,
+            $current,
+            ['data-speakeasy-real' => true],
+        );
+
+        if ($undecryptable) {
+            $real .= Html::hiddenInput("{$this->handle}[stored]", $stored);
+        }
 
         // Display copy, not submitted. Masked with bullets unless revealed.
         $display = Html::tag('input', '', [
@@ -239,11 +307,15 @@ class PasswordField extends Field implements PreviewableFieldInterface
             'style' => ['--icon-size' => '1rem', '--icon-color' => 'var(--gray-400)', 'display' => 'none'],
         ]);
 
+        // Nothing to reveal when the field is empty, so the toggle starts hidden and
+        // the JS shows it as soon as there's a value (and hides it again when the
+        // value is cleared).
         $toggle = !$showToggle ? '' : Html::button($eye . $eyeOff, [
             'type' => 'button',
             'data-speakeasy-toggle' => true,
             'title' => Craft::t('speakeasy', 'Show/hide password'),
             'style' => [
+                'display' => $current === '' ? 'none' : 'block',
                 'position' => 'absolute',
                 'top' => '50%',
                 'right' => '6px',
@@ -326,6 +398,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
     function paint(caret){
       disp.value = shown ? value : '•'.repeat(value.length);
       if (real) real.value = value;
+      if (btn) btn.style.display = value.length ? 'block' : 'none';
       if (caret != null){ try { disp.setSelectionRange(caret, caret); } catch(e){} }
     }
     disp.addEventListener('beforeinput', function(e){

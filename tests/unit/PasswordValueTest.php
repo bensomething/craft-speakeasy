@@ -52,9 +52,9 @@ class PasswordValueTest extends TestCase
     public function testALazyValueIsNotResolvedByMaskingOrPresenceChecks(): void
     {
         $resolved = false;
-        $value = new PasswordValue(function() use (&$resolved): string {
+        $value = new PasswordValue(function() use (&$resolved): array {
             $resolved = true;
-            return 'hunter2';
+            return ['hunter2', true];
         });
 
         $this->assertSame('••••••••', (string) $value);
@@ -67,9 +67,9 @@ class PasswordValueTest extends TestCase
     public function testALazyValueIsResolvedOnceOnGuardedReveal(): void
     {
         $calls = 0;
-        $value = new PasswordValue(function() use (&$calls): string {
+        $value = new PasswordValue(function() use (&$calls): array {
             $calls++;
-            return 'hunter2';
+            return ['hunter2', true];
         });
 
         $this->assertSame('hunter2', $value->revealPassword(new RevealToken()));
@@ -81,7 +81,7 @@ class PasswordValueTest extends TestCase
     {
         // Only ever constructed for a stored (non-empty) value, so it must count as
         // set — otherwise the gate would let a protected element through unlocked.
-        $value = new PasswordValue(fn(): string => 'hunter2');
+        $value = new PasswordValue(fn(): array => ['hunter2', true]);
 
         $this->assertFalse($value->isEmpty());
         $this->assertSame('••••••••', (string) $value);
