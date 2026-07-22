@@ -2,17 +2,6 @@
 
 ## 1.0.0-beta.5 - 2026-07-22
 
-### Changed
-- A password that can't be decrypted, because the security key changed since it was set, is now called out in the field with a warning explaining that the original is unrecoverable and a new password needs to be entered. Previously the field displayed the raw stored ciphertext as though it were the password.
-- A Password field can no longer be added to the same field layout twice. Only the first one gates the element, so a second instance was always inert. Two *different* Password fields can still be placed, and the later ones still warn that they have no effect.
-
-### Fixed
-- Saving an element whose password can't be decrypted no longer re-encrypts the stored ciphertext under the new key. That turned the ciphertext into the element's actual password, permanently and with no warning left to show it had happened, and it could be triggered by an edit to an unrelated field. Such a value is now written back exactly as it was found, so it stays gated and stays flagged until an editor replaces it.
-- A field rendered in its static (uneditable) state no longer decrypts the password when it's only going to show the mask. The plaintext was never written to the page, but the work was done and the value held in memory for no reason.
-- The reveal toggle is hidden while the field is empty, since there's nothing to reveal.
-
-## 1.0.0-beta.4 - 2026-07-22
-
 ### Added
 - **Lockdown**, closing every protected element at once. Visitors get a message in place of the unlock screen, no password is accepted, and anyone already unlocked is shut out too. Protected responses return `403` while it's on. Elements without a password are unaffected, and control-panel users still bypass it when **Bypass for control-panel users** is on, so editors and live preview keep working.
 - Lockdown is set only by the `SPEAKEASY_LOCKDOWN` environment variable, keeping it per-environment and out of project config, where a stored value would follow a deploy to every other environment. The General tab reports its state as a status label rather than offering a control that couldn't work.
@@ -24,6 +13,13 @@
 ### Changed
 - The **Unlock screen CSS** preview's **Show error message** toggle is now a **Message** dropdown, covering the plain screen, the error, and the new lockdown message.
 - Renamed `--speakeasy-input-text` to `--speakeasy-text`, now that the lockdown message uses it as well as the input. This is the variable renamed from `--speakeasy-fg` in beta.2, so custom CSS carrying either spelling will need updating.
+- A password that can't be decrypted, because the security key changed since it was set, is now called out in the field with a warning explaining that the original is unrecoverable and a new password needs to be entered. Previously the field displayed the raw stored ciphertext as though it were the password.
+- A Password field can no longer be added to the same field layout twice. Only the first one gates the element, so a second instance was always inert. Two *different* Password fields can still be placed, and the later ones still warn that they have no effect.
+
+### Fixed
+- Saving an element whose password can't be decrypted no longer re-encrypts the stored ciphertext under the new key. That turned the ciphertext into the element's actual password, permanently and with no warning left to show it had happened, and it could be triggered by an edit to an unrelated field. Such a value is now written back exactly as it was found, so it stays gated and stays flagged until an editor replaces it.
+- A field rendered in its static (uneditable) state no longer decrypts the password when it's only going to show the mask. The plaintext was never written to the page, but the work was done and the value held in memory for no reason.
+- The reveal toggle is hidden while the field is empty, since there's nothing to reveal.
 
 ## 1.0.0-beta.3 - 2026-07-22
 
