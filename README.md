@@ -3,7 +3,7 @@
 Per-element password protection for Craft CMS. Add a **Password** field to an entry type's field layout, and once a password has been set, anonymous visitors get an unlock screen until they enter it. Passwords are **encrypted at rest** with your project security key.
 
 > [!NOTE]
-> **Speakeasy is in beta.** It's feature-complete and safe to try, but the API, settings, and stored-value formats may still change before 1.0.0. Please [report anything you hit](https://github.com/bensomething/craft-speakeasy/issues).
+> **Speakeasy is in beta.** It's feature-complete and safe to try, but the API, settings, and stored-value formats may still change before 1.0.0. Please [report anything you hit](https://github.com/bensomething/craft-speakeasy/issues). If you'd like to help, [TESTING.md](TESTING.md) is a fifteen-minute checklist of the things most worth a second pair of eyes.
 
 > **These are shared access passwords, not user credentials.** They're reversibly encrypted so editors can view and share them, deliberately *not* one-way hashed like a login password. Speakeasy gates a page behind a shared passphrase, it doesn't authenticate individual users. If you need per-user login, use Craft's user accounts.
 

@@ -1,6 +1,6 @@
 # Release Notes for Speakeasy
 
-## Unreleased
+## 1.0.0-beta.5 - 2026-07-22
 
 ### Changed
 - A password that can't be decrypted, because the security key changed since it was set, is now called out in the field with a warning explaining that the original is unrecoverable and a new password needs to be entered. Previously the field displayed the raw stored ciphertext as though it were the password.
