@@ -12,6 +12,7 @@ Per-element password protection for Craft CMS. Add a **Password** field to an en
 - **Field-first:** protection = the field has a value. No section config or template code.
 - **Encrypted, not plaintext:** the value lives encrypted in the database, not in config or templates.
 - **Editor-driven:** editors set passwords in the element editor, no per-page developer work.
+- **Customisable:** restyle the bundled unlock screen from a live-previewed CSS editor, or replace it with your own site template.
 - **Safe defaults:** constant-time comparison, per-IP/element rate limiting, `no-store` + `noindex` on protected responses, shared unlock when passwords match, and a CP-user bypass so live preview keeps working.
 
 ## Requirements
