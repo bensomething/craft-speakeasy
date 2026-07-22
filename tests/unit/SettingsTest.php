@@ -54,6 +54,51 @@ class SettingsTest extends TestCase
         $this->assertTrue($settings->validate());
     }
 
+    #[DataProvider('textSettings')]
+    public function testWhitespaceOnlyTextSettingsValidateToEmpty(string $attribute): void
+    {
+        $settings = new Settings();
+        $settings->$attribute = "  \t\n ";
+
+        $this->assertTrue($settings->validate());
+        $this->assertSame('', $settings->$attribute);
+    }
+
+    public static function textSettings(): array
+    {
+        return [
+            ['template'],
+            ['customCss'],
+            ['placeholderText'],
+            ['buttonText'],
+            ['errorText'],
+        ];
+    }
+
+    public function testCustomErrorTextIsUsedForTheBundledScreen(): void
+    {
+        $settings = new Settings();
+        $settings->errorText = 'Wrong password, try again';
+
+        $this->assertSame('Wrong password, try again', $settings->getCustomErrorText());
+    }
+
+    public function testCustomErrorTextIsNullWhenBlank(): void
+    {
+        $this->assertNull((new Settings())->getCustomErrorText());
+    }
+
+    public function testCustomErrorTextIsIgnoredWhenACustomTemplateIsSet(): void
+    {
+        // The field is hidden in the CP once a template is set, so a value left
+        // over from before must not stay live where it can't be edited.
+        $settings = new Settings();
+        $settings->errorText = 'Wrong password, try again';
+        $settings->template = '_unlock';
+
+        $this->assertNull($settings->getCustomErrorText());
+    }
+
     public function testSafeCustomCssNeutralisesAStyleTagBreakout(): void
     {
         $settings = new Settings();

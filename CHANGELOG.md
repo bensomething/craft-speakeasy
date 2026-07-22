@@ -8,10 +8,13 @@
 - `--speakeasy-placeholder-text` CSS variable, so the input placeholder colour can be set apart from the input text.
 
 ### Changed
+- The General tab's number fields now carry their unit as a suffix beside the input (**seconds**, **attempts**) instead of in the label.
 - When a custom unlock template is set, the bundled-screen settings are now replaced by a single override notice rather than shown disabled.
 - Renamed the unlock screen's CSS variables to spell out `background` and `text` in full and to be role-specific (for example `--speakeasy-bg` is now `--speakeasy-background`, `--speakeasy-fg` is now `--speakeasy-input-text`, and `--speakeasy-error` is now `--speakeasy-error-text`). Custom CSS saved under the old names will need updating.
 
 ### Fixed
+- **Error text** is now scoped to the bundled screen like the other copy settings. A stored value no longer stays live for a custom unlock template, where the field is hidden and so can't be edited.
+- The bundled screen's copy settings now treat a whitespace-only value as blank, falling back to the default instead of rendering an invisible placeholder or button label.
 - `--speakeasy-font` now applies to the unlock screen's input placeholder and button, which as form controls do not inherit `font-family`.
 - The unlock screen's error message no longer nudges the centred input upward when it appears.
 - Shortened the default font stack to lead with `system-ui`.

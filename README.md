@@ -58,10 +58,10 @@ Settings are split across two tabs. **General:**
 
 | Setting | Default | Purpose |
 | --- | --- | --- |
-| Bypass for CP users | on | Signed-in users who can view the element skip the gate |
+| Bypass for control-panel users | on | Signed-in users who can view the element skip the gate |
 | Unlock duration | 0 | How long an unlock lasts, in seconds (0 = the whole browsing session) |
 | Max unlock attempts | 5 | Failed tries per IP + element before lockout (0 disables) |
-| Lockout window | 300s | Lockout duration / attempt-count expiry |
+| Lockout window | 300 | Lockout duration / attempt-count expiry, in seconds |
 
 **Appearance:**
 
@@ -73,7 +73,7 @@ Settings are split across two tabs. **General:**
 | Error text | Incorrect password | Message shown after a failed unlock |
 | Unlock screen CSS | *(bundled variables)* | Restyle the bundled screen by overriding its CSS variables |
 
-The **Placeholder text**, **Button text**, **Error text**, and **Unlock screen CSS** settings style the bundled screen, so they're hidden when a **Custom unlock template** is set. Each text field falls back to its default (shown above) when left blank.
+The **Placeholder text**, **Button text**, and **Error text** settings are the bundled screen's copy, and **Unlock screen CSS** is its styling. All four apply to the bundled screen only, so they're hidden and stop taking effect when a **Custom unlock template** is set, which owns its own copy and styling. Each text field falls back to its default (shown above) when left blank.
 
 ### Restyling the bundled screen
 
@@ -86,11 +86,11 @@ Without replacing the template, you can retheme the bundled unlock screen from t
 }
 ```
 
-Available variables: `--speakeasy-background`, `--speakeasy-input-background`, `--speakeasy-input-text`, `--speakeasy-placeholder-text`, `--speakeasy-input-border`, `--speakeasy-input-border-focus`, `--speakeasy-button-background`, `--speakeasy-button-text`, `--speakeasy-button-background-hover`, `--speakeasy-error-text`, `--speakeasy-radius`, `--speakeasy-font`. This field is ignored once a custom **Unlock template** is set, since your template owns its styling. If the [CKEditor plugin](https://github.com/craftcms/ckeditor) (or anything else depending on `nystudio107/craft-code-editor`) is installed, the field upgrades to a syntax-highlighting Monaco editor. Otherwise it's a plain code textarea.
+Available variables: `--speakeasy-background`, `--speakeasy-input-background`, `--speakeasy-input-text`, `--speakeasy-placeholder-text`, `--speakeasy-input-border`, `--speakeasy-input-border-focus`, `--speakeasy-button-background`, `--speakeasy-button-text`, `--speakeasy-button-background-hover`, `--speakeasy-error-text`, `--speakeasy-radius`, `--speakeasy-font`. If the [CKEditor plugin](https://github.com/craftcms/ckeditor) (or anything else depending on `nystudio107/craft-code-editor`) is installed, the field upgrades to a syntax-highlighting Monaco editor. Otherwise it's a plain code textarea.
 
 ### Custom unlock template
 
-Point the **Unlock template** setting at a site template. It receives an `element` variable and must post to the `speakeasy/unlock` action:
+Point the **Custom unlock template** setting at a site template. It receives an `element` variable and must post to the `speakeasy/unlock` action:
 
 ```twig
 <form method="post">
@@ -125,7 +125,7 @@ Protected responses are sent with `no-store`. If you use a server- or CDN-level 
 
 ## Note on light/dark mode
 
-The bundled unlock screen is a self-contained page (Speakeasy swaps the whole response, so none of your site's CSS or JS loads on it). It adapts to light/dark via the visitor's **OS/browser** preference (`@media (prefers-color-scheme: dark)`), which works everywhere without any cooperation from your templates. It does **not** follow a site's manual theme toggle (a `.dark` class, a `data-theme` attribute, a cookie), because that toggle's JS never runs on the unlock screen. If a visitor's OS is light but they've switched your site to dark, the unlock screen still shows light. To mirror a manual toggle, use a custom **Unlock template** so the screen renders inside your own layout, where your theme logic applies.
+The bundled unlock screen is a self-contained page (Speakeasy swaps the whole response, so none of your site's CSS or JS loads on it). It adapts to light/dark via the visitor's **OS/browser** preference (`@media (prefers-color-scheme: dark)`), which works everywhere without any cooperation from your templates. It does **not** follow a site's manual theme toggle (a `.dark` class, a `data-theme` attribute, a cookie), because that toggle's JS never runs on the unlock screen. If a visitor's OS is light but they've switched your site to dark, the unlock screen still shows light. To mirror a manual toggle, set a **Custom unlock template** so the screen renders inside your own layout, where your theme logic applies.
 
 ## Note on Safari
 

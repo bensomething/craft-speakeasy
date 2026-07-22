@@ -62,9 +62,29 @@ CSS;
     {
         return [
             [['maxAttempts', 'attemptWindowSeconds', 'unlockDurationSeconds'], 'integer', 'min' => 0],
+            // Trim first, so a field holding only whitespace counts as empty and
+            // falls back to its default rather than rendering as blank copy.
+            [['template', 'customCss', 'placeholderText', 'buttonText', 'errorText'], 'trim'],
             [['template', 'customCss', 'placeholderText', 'buttonText', 'errorText'], 'string'],
             [['bypassForCpUsers'], 'boolean'],
         ];
+    }
+
+    /**
+     * The configured failed-unlock message, or null when the bundled default
+     * should be used. Like the other copy fields this belongs to the bundled
+     * screen, so a custom template always gets the default: its field is hidden
+     * in the CP, and a stale value would otherwise stay live with no way to edit
+     * it. Returns null rather than the default string so the caller can keep
+     * that string translatable.
+     */
+    public function getCustomErrorText(): ?string
+    {
+        if ($this->template !== '' || $this->errorText === '') {
+            return null;
+        }
+
+        return $this->errorText;
     }
 
     /**

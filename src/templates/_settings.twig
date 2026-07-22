@@ -36,6 +36,12 @@
         /* Full-bleed dividers, matching Craft's native `.content-pane > hr` (ours are nested a level deeper). */
         #speakeasy-general hr, #speakeasy-appearance hr { margin-inline: calc(var(--padding) * -1); }
 
+        /* Counters sized to their content. Craft's `.text` inputs are full-width and
+           the `size` attribute does nothing to a number input, so width is set here.
+           A suffixed field wraps the input in `.flex > .textwrapper`, and it's that
+           flex item that has to shrink; the input fills it. */
+        #speakeasy-general .flex > .textwrapper { flex: 0 0 100px; }
+
         /* Three quarter-width fields in a row, the empty fourth column left as slack.
            `minmax(0, …)` lets the tracks shrink below the inputs' natural width so
            they stay even instead of blowing out. Craft gives each `.field` its own
@@ -110,12 +116,12 @@
             }) }}
 
             {{ forms.textField({
-                label: 'Unlock duration (seconds)' | t('speakeasy'),
+                label: 'Unlock duration' | t('speakeasy'),
                 instructions: 'How long an unlock lasts before the visitor has to enter the password again. Set to 0 to keep it for the whole browsing session.' | t('speakeasy'),
                 id: 'unlockDurationSeconds',
                 name: 'unlockDurationSeconds',
                 value: settings.unlockDurationSeconds,
-                size: 8,
+                suffix: 'seconds' | t('speakeasy'),
                 type: 'number',
                 min: 0,
                 errors: settings.getErrors('unlockDurationSeconds'),
@@ -129,19 +135,19 @@
                 id: 'maxAttempts',
                 name: 'maxAttempts',
                 value: settings.maxAttempts,
-                size: 6,
+                suffix: 'attempts' | t('speakeasy'),
                 type: 'number',
                 min: 0,
                 errors: settings.getErrors('maxAttempts'),
             }) }}
 
             {{ forms.textField({
-                label: 'Lockout window (seconds)' | t('speakeasy'),
+                label: 'Lockout window' | t('speakeasy'),
                 instructions: 'How long a lockout lasts and how long failed attempts are counted.' | t('speakeasy'),
                 id: 'attemptWindowSeconds',
                 name: 'attemptWindowSeconds',
                 value: settings.attemptWindowSeconds,
-                size: 8,
+                suffix: 'seconds' | t('speakeasy'),
                 type: 'number',
                 min: 0,
                 errors: settings.getErrors('attemptWindowSeconds'),
@@ -317,14 +323,16 @@
                     var tab = document.getElementById('speakeasy-appearance');
                     var frame = tab.querySelector('.speakeasy-preview__frame');
                     var errorToggle = tab.querySelector('.speakeasy-preview__error-toggle');
+                    var mode = tab.querySelector('.speakeasy-preview__mode');
                     // The field's own textarea, not Monaco's internal unnamed one.
                     var field = tab.querySelector('textarea[name*="customCss"]');
-                    if (!frame || !field) {
+                    // Every one of these is dereferenced unqualified below, so bail
+                    // as a group rather than throwing partway through a render.
+                    if (!frame || !field || !errorToggle || !mode) {
                         return;
                     }
 
                     var shell = {{ previewShell | json_encode | raw }};
-                    var mode = tab.querySelector('.speakeasy-preview__mode');
                     // The three copy fields. Each falls back to its own placeholder, which
                     // holds the bundled default, so an empty field previews that default.
                     var textFields = {
@@ -401,6 +409,8 @@
 
                     // Monaco writes back to the textarea without firing `input`, so poll as
                     // well. The listeners just make the common cases feel immediate.
+                    // Polling pauses while the tab is in the background, where there is
+                    // nothing to see and the page may sit open for hours.
                     field.addEventListener('input', render);
                     errorToggle.addEventListener('change', render);
                     mode.addEventListener('change', render);
@@ -409,7 +419,12 @@
                             textFields[token].addEventListener('input', render);
                         }
                     }
-                    setInterval(render, 250);
+                    setInterval(function() {
+                        if (!document.hidden) {
+                            render();
+                        }
+                    }, 250);
+                    document.addEventListener('visibilitychange', render);
                     render();
                 })();
             {% endjs %}
