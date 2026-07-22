@@ -1,5 +1,19 @@
 # Release Notes for Speakeasy
 
+## 1.0.0-beta.4 - 2026-07-22
+
+### Added
+- **Lockdown**, closing every protected element at once. Visitors get a message in place of the unlock screen, no password is accepted, and anyone already unlocked is shut out too. Protected responses return `403` while it's on. Elements without a password are unaffected, and control-panel users still bypass it when **Bypass for control-panel users** is on, so editors and live preview keep working.
+- Lockdown is set only by the `SPEAKEASY_LOCKDOWN` environment variable, keeping it per-environment and out of project config, where a stored value would follow a deploy to every other environment. The General tab reports its state as a status label rather than offering a control that couldn't work.
+- **Lockdown text** setting, alongside the bundled screen's other copy settings and falling back to a translatable default in the same way.
+- A custom **Unlock template** now receives a `lockdown` variable so it can render its own locked state. Templates that ignore it are still safe, as the `speakeasy/unlock` action refuses to run under lockdown.
+- Settings can be set in `config/speakeasy.php`, with a commented starter at `src/config.php` to copy. Everything except **Lockdown** is supported.
+- Settings named in `config/speakeasy.php` are now shown disabled on the settings screen with Craft's standard override notice, rather than accepting an edit that silently reverts on the next load.
+
+### Changed
+- The **Unlock screen CSS** preview's **Show error message** toggle is now a **Message** dropdown, covering the plain screen, the error, and the new lockdown message.
+- Renamed `--speakeasy-input-text` to `--speakeasy-text`, now that the lockdown message uses it as well as the input. This is the variable renamed from `--speakeasy-fg` in beta.2, so custom CSS carrying either spelling will need updating.
+
 ## 1.0.0-beta.3 - 2026-07-22
 
 ### Changed
