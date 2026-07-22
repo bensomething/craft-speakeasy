@@ -11,8 +11,9 @@ body {
     padding: 1.5rem;
     font-family: var(--speakeasy-font);
     background: var(--speakeasy-background);
-    /* Base colour for any stray text; the form's own elements set their own. */
-    color: var(--speakeasy-input-text);
+    /* Base text colour, inherited by the lockdown message. The input restates it
+       because form controls don't inherit it, and the button and error set theirs. */
+    color: var(--speakeasy-text);
 }
 .speakeasy { width: 100%; max-width: 22rem; position: relative; }
 .speakeasy__row { display: flex; gap: .5rem; }
@@ -22,7 +23,7 @@ body {
     border: 1px solid var(--speakeasy-input-border);
     border-radius: var(--speakeasy-radius);
     background: var(--speakeasy-input-background);
-    color: var(--speakeasy-input-text);
+    color: var(--speakeasy-text);
     font-family: inherit;
     font-size: 1rem;
 }
@@ -41,6 +42,34 @@ body {
     font-size: 1rem;
 }
 .speakeasy__button:hover { background: var(--speakeasy-button-background-hover); }
+/* Lockdown message: icon beside the text, the pair centred as a unit. `start`
+   keeps the icon on the first line when the message wraps to several. */
+.speakeasy--locked {
+    display: flex;
+    align-items: start;
+    justify-content: center;
+    gap: .75rem;
+}
+/* Matched on the element so swapping the icon's markup needs no class. Sized by
+   height alone, letting the viewBox set the width, so any aspect ratio works.
+   The 1.5rem line box centres it against the first line whatever that height is.
+   `fill` is set here because the icon markup doesn't carry one, and
+   `currentColor` then tracks the theme. `flex: 0 0 auto` stops a long message
+   squashing it. */
+.speakeasy--locked svg {
+    flex: 0 0 auto;
+    width: auto;
+    height: 1.25rem;
+    align-self: start;
+    margin-block: calc((1.5rem - 1.25rem) / 2);
+    fill: currentColor;
+    opacity: .35;
+}
+.speakeasy__message {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+}
 .speakeasy__error {
     position: absolute;
     top: 100%;

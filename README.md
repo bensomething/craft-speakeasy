@@ -58,6 +58,7 @@ Settings are split across two tabs. **General:**
 
 | Setting | Default | Purpose |
 | --- | --- | --- |
+| Lockdown | off | Close every protected element at once, environment variable only (see [Lockdown](#lockdown)) |
 | Bypass for control-panel users | on | Signed-in users who can view the element skip the gate |
 | Unlock duration | 0 | How long an unlock lasts, in seconds (0 = the whole browsing session) |
 | Max unlock attempts | 5 | Failed tries per IP + element before lockout (0 disables) |
@@ -71,9 +72,74 @@ Settings are split across two tabs. **General:**
 | Placeholder text | Password | Placeholder in the bundled screen's password field |
 | Button text | Enter | Label on the bundled screen's submit button |
 | Error text | Incorrect password | Message shown after a failed unlock |
+| Lockdown text | This page is currently locked. | Message shown while lockdown is on |
 | Unlock screen CSS | *(bundled variables)* | Restyle the bundled screen by overriding its CSS variables |
 
-The **Placeholder text**, **Button text**, and **Error text** settings are the bundled screen's copy, and **Unlock screen CSS** is its styling. All four apply to the bundled screen only, so they're hidden and stop taking effect when a **Custom unlock template** is set, which owns its own copy and styling. Each text field falls back to its default (shown above) when left blank.
+The **Placeholder text**, **Button text**, **Error text**, and **Lockdown text** settings are the bundled screen's copy, and **Unlock screen CSS** is its styling. All five apply to the bundled screen only, so they're hidden and stop taking effect when a **Custom unlock template** is set, which owns its own copy and styling. Each text field falls back to its default (shown above) when left blank.
+
+### Setting them in a config file
+
+Every setting above except **Lockdown** can be set in `config/speakeasy.php`. The plugin ships a commented starter at [`src/config.php`](src/config.php) covering every option, so the quickest way in is to copy it:
+
+```bash
+cp vendor/bensomething/craft-speakeasy/src/config.php config/speakeasy.php
+```
+
+Everything in it is commented out, so copying it changes nothing until you uncomment something. The property names are:
+
+```php
+return [
+    'maxAttempts' => 3,
+    'attemptWindowSeconds' => 600,
+    'placeholderText' => 'Enter the password',
+];
+```
+
+| Setting | Property |
+| --- | --- |
+| Bypass for control-panel users | `bypassForCpUsers` |
+| Unlock duration | `unlockDurationSeconds` |
+| Max unlock attempts | `maxAttempts` |
+| Lockout window | `attemptWindowSeconds` |
+| Custom unlock template | `template` |
+| Placeholder text | `placeholderText` |
+| Button text | `buttonText` |
+| Error text | `errorText` |
+| Lockdown text | `lockdownText` |
+| Unlock screen CSS | `customCss` |
+
+Craft's [multi-environment config](https://craftcms.com/docs/5.x/configure.html#multi-environment-configs) works as usual:
+
+```php
+return [
+    '*' => ['maxAttempts' => 5],
+    'dev' => ['maxAttempts' => 0],
+];
+```
+
+Anything named there wins over what's saved in the control panel, on every load. Those fields are shown disabled with a note saying so, since an edit would otherwise save and then silently revert. The stored value underneath is left intact and returns if you remove the key from the file.
+
+**Lockdown** is the exception. It isn't a stored setting at all, so a `lockdown` key here does nothing. Use the `SPEAKEASY_LOCKDOWN` environment variable instead.
+
+### Lockdown
+
+Closes every protected element at once. Visitors get a message instead of the unlock screen, no password is accepted, and anyone already unlocked is shut out too. Protected responses return `403` while it's on. Elements without a password are unaffected, and control-panel users still bypass it if **Bypass for control-panel users** is on, so editors and live preview keep working.
+
+Set it with the `SPEAKEASY_LOCKDOWN` environment variable:
+
+```bash
+SPEAKEASY_LOCKDOWN=true
+```
+
+`true`/`false` and `1`/`0` all work. Unset and empty both mean off, so a shared `.env` template can ship the key blank. Any other non-empty value counts as on, erring towards locked rather than open.
+
+This is the only way to set it. Lockdown isn't a stored setting, so it can't be set from the control panel or from `config/speakeasy.php`, and a stray `lockdown` key in either is ignored. The settings screen shows the current state and whether the environment set it, but has no control to change it.
+
+That's deliberate. Plugin settings live in project config, which is shared across environments, so a stored value would carry a lockdown from wherever it was set to everywhere else on the next deploy, and a control-panel switch would only work where admin changes are allowed, which shouldn't include production. An environment variable is per-environment, isn't committed, and takes effect without deploying anything.
+
+Lockdown is a curtain, not a revocation. Existing unlocks aren't cleared, they're ignored, and they resume working the moment it's switched off. To actually end them, change the passwords, which invalidates every unlock derived from them, or lock down and wait out the session-expiry window before lifting it.
+
+A custom **Unlock template** receives a `lockdown` variable so it can render its own locked state. It doesn't have to: the `speakeasy/unlock` action refuses to run under lockdown, so a template that still shows its form just can't be used to get in.
 
 ### Restyling the bundled screen
 
@@ -86,7 +152,7 @@ Without replacing the template, you can retheme the bundled unlock screen from t
 }
 ```
 
-Available variables: `--speakeasy-background`, `--speakeasy-input-background`, `--speakeasy-input-text`, `--speakeasy-placeholder-text`, `--speakeasy-input-border`, `--speakeasy-input-border-focus`, `--speakeasy-button-background`, `--speakeasy-button-text`, `--speakeasy-button-background-hover`, `--speakeasy-error-text`, `--speakeasy-radius`, `--speakeasy-font`. If the [CKEditor plugin](https://github.com/craftcms/ckeditor) (or anything else depending on `nystudio107/craft-code-editor`) is installed, the field upgrades to a syntax-highlighting Monaco editor. Otherwise it's a plain code textarea.
+Available variables: `--speakeasy-background`, `--speakeasy-input-background`, `--speakeasy-text`, `--speakeasy-placeholder-text`, `--speakeasy-input-border`, `--speakeasy-input-border-focus`, `--speakeasy-button-background`, `--speakeasy-button-text`, `--speakeasy-button-background-hover`, `--speakeasy-error-text`, `--speakeasy-radius`, `--speakeasy-font`. If the [CKEditor plugin](https://github.com/craftcms/ckeditor) (or anything else depending on `nystudio107/craft-code-editor`) is installed, the field upgrades to a syntax-highlighting Monaco editor. Otherwise it's a plain code textarea.
 
 ### Custom unlock template
 

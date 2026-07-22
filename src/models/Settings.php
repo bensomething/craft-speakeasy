@@ -3,6 +3,7 @@
 namespace bensomething\speakeasy\models;
 
 use craft\base\Model;
+use craft\helpers\App;
 
 class Settings extends Model
 {
@@ -17,7 +18,7 @@ class Settings extends Model
     color-scheme: light dark;
     --speakeasy-background: #fafafa;
     --speakeasy-input-background: #fff;
-    --speakeasy-input-text: #1a1a1a;
+    --speakeasy-text: #1a1a1a;
     --speakeasy-placeholder-text: #8a8a8a;
     --speakeasy-input-border: #cbcbcb;
     --speakeasy-input-border-focus: #555;
@@ -33,7 +34,7 @@ class Settings extends Model
     :root {
         --speakeasy-background: #0d0d0d;
         --speakeasy-input-background: #1a1a1a;
-        --speakeasy-input-text: #e8e8e8;
+        --speakeasy-text: #e8e8e8;
         --speakeasy-placeholder-text: #777;
         --speakeasy-input-border: #333;
         --speakeasy-input-border-focus: #888;
@@ -56,7 +57,17 @@ CSS;
     public string $placeholderText = '';
     public string $buttonText = '';
     public string $errorText = '';
+    public string $lockdownText = '';
     public bool $bypassForCpUsers = true;
+
+    /**
+     * Lockdown is deliberately not a setting. It's operational, per-environment
+     * state, and a stored value would live in project config, which is shared
+     * across environments and would carry a lockdown from wherever it was set to
+     * everywhere else. Keeping it out of the model also means it can never be
+     * saved into a state the CP has no control to clear.
+     */
+    public const LOCKDOWN_ENV = 'SPEAKEASY_LOCKDOWN';
 
     public function rules(): array
     {
@@ -64,8 +75,8 @@ CSS;
             [['maxAttempts', 'attemptWindowSeconds', 'unlockDurationSeconds'], 'integer', 'min' => 0],
             // Trim first, so a field holding only whitespace counts as empty and
             // falls back to its default rather than rendering as blank copy.
-            [['template', 'customCss', 'placeholderText', 'buttonText', 'errorText'], 'trim'],
-            [['template', 'customCss', 'placeholderText', 'buttonText', 'errorText'], 'string'],
+            [['template', 'customCss', 'placeholderText', 'buttonText', 'errorText', 'lockdownText'], 'trim'],
+            [['template', 'customCss', 'placeholderText', 'buttonText', 'errorText', 'lockdownText'], 'string'],
             [['bypassForCpUsers'], 'boolean'],
         ];
     }
@@ -85,6 +96,32 @@ CSS;
         }
 
         return $this->errorText;
+    }
+
+    /**
+     * Whether every protected element is currently closed.
+     *
+     * Craft normalises "true"/"false" and "1"/"0" to booleans and ints before we
+     * see them, so those all behave as written. Unset and empty are both off,
+     * which lets a shared .env template ship the key blank. Any other non-empty
+     * value counts as on, erring towards locked rather than open.
+     */
+    public function isLockedDown(): bool
+    {
+        return (bool)App::env(self::LOCKDOWN_ENV);
+    }
+
+    /**
+     * The configured lockdown message, or null for the bundled default. Same
+     * bundled-screen rule as getCustomErrorText().
+     */
+    public function getCustomLockdownText(): ?string
+    {
+        if ($this->template !== '' || $this->lockdownText === '') {
+            return null;
+        }
+
+        return $this->lockdownText;
     }
 
     /**

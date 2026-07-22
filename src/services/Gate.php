@@ -110,16 +110,30 @@ class Gate extends Component
         $settings = Plugin::getInstance()->getSettings();
         $user = Craft::$app->getUser()->getIdentity();
 
-        if (
-            $this->isUnlocked($password) ||
-            ($settings->bypassForCpUsers && $user !== null && $element->canView($user))
-        ) {
+        // Checked ahead of lockdown so editors and live preview keep working
+        // while the site is closed to the public.
+        if ($settings->bypassForCpUsers && $user !== null && $element->canView($user)) {
+            return;
+        }
+
+        // Lockdown outranks an existing unlock: the session token is left alone
+        // but no longer gets anyone in. 403 because this refusal has no remedy,
+        // unlike the unlock screen, which is a challenge and stays a 200.
+        $lockdown = $settings->isLockedDown();
+
+        if ($lockdown) {
+            $response->setStatusCode(403);
+        } elseif ($this->isUnlocked($password)) {
             return;
         }
 
         $event->template = $settings->template ?: 'speakeasy/_unlock';
         $event->variables = array_merge($event->variables, [
             'element' => $element,
+            // Custom templates get this so they can render their own locked
+            // state. The gate doesn't rely on them honouring it, the unlock
+            // action refuses to run under lockdown either way.
+            'lockdown' => $lockdown,
         ]);
     }
 }

@@ -5,6 +5,7 @@ namespace bensomething\speakeasy\controllers;
 use bensomething\speakeasy\Plugin;
 use Craft;
 use craft\web\Controller;
+use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
 
@@ -31,6 +32,14 @@ class UnlockController extends Controller
 
         $plugin = Plugin::getInstance();
         $settings = $plugin->getSettings();
+
+        // Refuse before any password work, so lockdown can't be sidestepped by
+        // posting straight to this action. Without it a visitor could still bank
+        // a valid session token to spend the moment lockdown lifts.
+        if ($settings->isLockedDown()) {
+            throw new ForbiddenHttpException('Unlocking is disabled.');
+        }
+
         $attemptKey = 'speakeasy:attempts:' . md5($request->getUserIP() . ':' . $element->id);
 
         // Count this attempt before checking the password, so parallel requests

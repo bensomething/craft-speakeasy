@@ -27,6 +27,23 @@
     'speakeasy-appearance': { label: 'Appearance' | t('speakeasy'), url: '#speakeasy-appearance' },
 } %}
 
+{# Craft merges config/speakeasy.php over the stored settings on every load, so a
+   field named there can't be changed from this page. Each one is disabled and
+   labelled instead, otherwise an edit would save and then silently revert. A
+   disabled field isn't posted, so the stored value underneath is left intact and
+   returns if the key is later removed from the file. Merged into each field's
+   config below, keyed by setting name. #}
+{% set overrideAttrs = {} %}
+{% for key in configOverrides %}
+    {# Craft's own wording for this, from its General Settings page, so it reads
+       the same as the rest of the CP and picks up existing translations. Field
+       warnings are run through Markdown, so the backticks render as code. #}
+    {% set overrideAttrs = overrideAttrs | merge({ (key): {
+        disabled: true,
+        warning: 'This is being overridden by the {setting} config setting.' | t('app', { setting: "`#{key}`" }),
+    } }) %}
+{% endfor %}
+
 {% block content %}
     {{ actionInput('plugins/save-plugin-settings') }}
     {{ hiddenInput('pluginHandle', plugin.handle) }}
@@ -42,7 +59,7 @@
            flex item that has to shrink; the input fills it. */
         #speakeasy-general .flex > .textwrapper { flex: 0 0 100px; }
 
-        /* Three quarter-width fields in a row, the empty fourth column left as slack.
+        /* Four quarter-width fields in a row.
            `minmax(0, …)` lets the tracks shrink below the inputs' natural width so
            they stay even instead of blowing out. Craft gives each `.field` its own
            margins (a bottom gap, negative insets to reach the pane edges, and top
@@ -51,6 +68,11 @@
         .speakeasy-text-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; align-items: start; }
         .speakeasy-text-fields > .field { margin: 0 !important; }
         @media (max-width: 700px) { .speakeasy-text-fields { grid-template-columns: 1fr; } }
+
+        /* Status pill and its warning on one line. `wrap` so the warning drops
+           below the pill rather than squashing on a narrow pane. */
+        .speakeasy-lockdown { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .speakeasy-lockdown .warning { margin: 0; }
 
         /* Editor beside its preview, even split. `minmax(0, 1fr)` keeps Monaco from
            forcing its column wider than the grid track. */
@@ -82,11 +104,11 @@
             align-items: center;
             gap: 8px;
         }
-        /* One chip style for both, so they sit level and stay legible against any
-           preview background. Solid, since the frame behind them is arbitrary. The
-           explicit height is what keeps the native select and the label in step, as
-           each would otherwise size itself off its own content. */
-        .speakeasy-preview__toggle, .speakeasy-preview__mode {
+        /* One chip style for both selects, so they sit level and stay legible against
+           any preview background. Solid, since the frame behind them is arbitrary.
+           The explicit height keeps the two in step, as each would otherwise size
+           itself off its own content. */
+        .speakeasy-preview__mode, .speakeasy-preview__message {
             box-sizing: border-box;
             margin: 0;
             width: auto;
@@ -98,14 +120,41 @@
             background: var(--white);
             border: 1px solid var(--hairline-color);
             border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .12);
         }
-        .speakeasy-preview__toggle { display: flex; align-items: center; gap: 6px; box-shadow: none; }
-        .speakeasy-preview__toggle input { margin: 0; }
-        .speakeasy-preview__mode { box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
     </style>
 
     <div id="speakeasy-general" role="tabpanel" aria-labelledby="tab-speakeasy-general">
+        {# Set outside the CP, so this reports state rather than offering a control.
+           A disabled lightswitch would read as a control that's temporarily
+           unavailable, which isn't the case: it's never settable from here.
+           Plugin settings live in project config, shared across environments, so a
+           switch would carry a lockdown from wherever it was flipped to everywhere
+           else, and would only work where admin changes are allowed, which is not
+           production. Shown rather than hidden so the feature stays discoverable. #}
+        {% set lockdownStatusBlock %}
+            <div class="speakeasy-lockdown">
+                {{ lockdownStatus | raw }}
+                {% if settings.isLockedDown() %}
+                    {# Craft's `.warning` is a block with its own margins, so the
+                       wrapper zeroes them to keep it level with the pill. #}
+                    <p class="warning has-icon">
+                        <span class="icon" aria-hidden="true"></span>
+                        <span>{{ 'Protected elements are currently closed to visitors.' | t('speakeasy') }}</span>
+                    </p>
+                {% endif %}
+            </div>
+        {% endset %}
+
+        {{ forms.field({
+            label: 'Lockdown' | t('speakeasy'),
+            instructions: 'Closes every protected element at once. Enable per-environment with a `SPEAKEASY_LOCKDOWN=true` environment variable.' | t('speakeasy'),
+        }, lockdownStatusBlock) }}
+
+        <hr>
+
         {% namespace 'settings' %}
+
             {{ forms.lightswitchField({
                 label: 'Bypass for control-panel users' | t('speakeasy'),
                 instructions: 'Skip the unlock screen for signed-in users who can view the element in the CP (admins included). Keeps live preview usable.' | t('speakeasy'),
@@ -113,7 +162,7 @@
                 name: 'bypassForCpUsers',
                 on: settings.bypassForCpUsers,
                 errors: settings.getErrors('bypassForCpUsers'),
-            }) }}
+            } | merge(overrideAttrs.bypassForCpUsers ?? {})) }}
 
             {{ forms.textField({
                 label: 'Unlock duration' | t('speakeasy'),
@@ -125,7 +174,7 @@
                 type: 'number',
                 min: 0,
                 errors: settings.getErrors('unlockDurationSeconds'),
-            }) }}
+            } | merge(overrideAttrs.unlockDurationSeconds ?? {})) }}
 
             <hr>
 
@@ -139,7 +188,7 @@
                 type: 'number',
                 min: 0,
                 errors: settings.getErrors('maxAttempts'),
-            }) }}
+            } | merge(overrideAttrs.maxAttempts ?? {})) }}
 
             {{ forms.textField({
                 label: 'Lockout window' | t('speakeasy'),
@@ -151,7 +200,7 @@
                 type: 'number',
                 min: 0,
                 errors: settings.getErrors('attemptWindowSeconds'),
-            }) }}
+            } | merge(overrideAttrs.attemptWindowSeconds ?? {})) }}
         {% endnamespace %}
     </div>
 
@@ -177,6 +226,9 @@
         buttonText: '__SPEAKEASY_BTN__',
         flashError: '__SPEAKEASY_ERR__',
     } only -%}
+    {# Both states are always in the document. The JS hides one with CSS, the same
+       trick the error toggle uses, so switching needs no re-render of the markup. #}
+    {%- include 'speakeasy/_unlock_locked.twig' with { lockdownText: '__SPEAKEASY_LOCK__' } only -%}
 </body>
 </html>{% endset %}
 
@@ -189,7 +241,7 @@
                 value: settings.template,
                 suggestions: craft.cp.getTemplateSuggestions(),
                 errors: settings.getErrors('template'),
-            }) }}
+            } | merge(overrideAttrs.template ?? {})) }}
 
             <hr>
 
@@ -216,7 +268,7 @@
                     value: settings.placeholderText,
                     placeholder: 'Password' | t('speakeasy'),
                     errors: settings.getErrors('placeholderText'),
-                }) }}
+                } | merge(overrideAttrs.placeholderText ?? {})) }}
                 {{ forms.textField({
                     label: 'Button text' | t('speakeasy'),
                     id: 'buttonText',
@@ -224,7 +276,7 @@
                     value: settings.buttonText,
                     placeholder: 'Enter' | t('speakeasy'),
                     errors: settings.getErrors('buttonText'),
-                }) }}
+                } | merge(overrideAttrs.buttonText ?? {})) }}
                 {{ forms.textField({
                     label: 'Error text' | t('speakeasy'),
                     id: 'errorText',
@@ -232,7 +284,15 @@
                     value: settings.errorText,
                     placeholder: 'Incorrect password' | t('speakeasy'),
                     errors: settings.getErrors('errorText'),
-                }) }}
+                } | merge(overrideAttrs.errorText ?? {})) }}
+                {{ forms.textField({
+                    label: 'Lockdown text' | t('speakeasy'),
+                    id: 'lockdownText',
+                    name: 'lockdownText',
+                    value: settings.lockdownText,
+                    placeholder: 'This page is currently locked.' | t('speakeasy'),
+                    errors: settings.getErrors('lockdownText'),
+                } | merge(overrideAttrs.lockdownText ?? {})) }}
             </div>
 
             {% set cssLabel = 'Unlock screen CSS' | t('speakeasy') %}
@@ -241,19 +301,23 @@
                 {% set defaultCss = constant('bensomething\\speakeasy\\models\\Settings::DEFAULT_CSS') %}
                 {% set speakeasyVars = [
                     '--speakeasy-background',
-                    '--speakeasy-input-background', '--speakeasy-input-text', '--speakeasy-placeholder-text',
+                    '--speakeasy-input-background', '--speakeasy-text', '--speakeasy-placeholder-text',
                     '--speakeasy-input-border', '--speakeasy-input-border-focus',
                     '--speakeasy-button-background', '--speakeasy-button-text', '--speakeasy-button-background-hover',
                     '--speakeasy-error-text', '--speakeasy-radius', '--speakeasy-font',
                 ] %}
+                {% set cssOverridden = 'customCss' in configOverrides %}
                 {# Input config only. The label, instructions and errors belong to the
-                   surrounding `forms.field` below, which wraps the whole grid. #}
+                   surrounding `forms.field` below, which wraps the whole grid. The
+                   override's `disabled` has to reach the input itself here, since
+                   that's where the editor lives rather than in the field wrapper. #}
                 {% set cssField = {
                     id: 'customCss',
                     name: 'customCss',
                     value: settings.customCss ?: defaultCss,
                     rows: 24,
                     class: 'code',
+                    disabled: cssOverridden,
                 } %}
 
                 {# The grid goes inside the field's input slot rather than wrapping the
@@ -268,7 +332,7 @@
                     <div>
                         {% if hasCodeEditor %}
                             {% import 'codeeditor/codeEditor' as codeEditor %}
-                            {{ codeEditor.textarea(cssField, 'CodeEditor', { language: 'css' }, { wrapperClass: 'monaco-editor-background-frame' }) }}
+                            {{ codeEditor.textarea(cssField, 'CodeEditor', { language: 'css', readOnly: cssOverridden }, { wrapperClass: 'monaco-editor-background-frame' }) }}
                         {% else %}
                             {{ forms.textarea(cssField) }}
                         {% endif %}
@@ -287,10 +351,14 @@
                                 <option value="light">{{ 'Light' | t('speakeasy') }}</option>
                                 <option value="dark">{{ 'Dark' | t('speakeasy') }}</option>
                             </select>
-                            <label class="speakeasy-preview__toggle">
-                                <input class="speakeasy-preview__error-toggle" type="checkbox">
-                                <span>{{ 'Show error message' | t('speakeasy') }}</span>
-                            </label>
+                            {# Which of the screen's states to show: the plain form,
+                               the form after a failed attempt, or the lockdown
+                               message that replaces it entirely. #}
+                            <select class="speakeasy-preview__message" aria-label="{{ 'Preview message' | t('speakeasy') }}">
+                                <option value="none">{{ 'No message' | t('speakeasy') }}</option>
+                                <option value="error">{{ 'Error' | t('speakeasy') }}</option>
+                                <option value="lockdown">{{ 'Lockdown' | t('speakeasy') }}</option>
+                            </select>
                         </div>
                     </div>
 
@@ -308,11 +376,14 @@
                 </div>
                 {% endset %}
 
+                {# `disabled` stays off the wrapper: it's already on the input, and the
+                   preview beside it should keep rendering either way. #}
                 {{ forms.field({
                     label: cssLabel,
                     instructions: cssInstructions,
                     id: 'customCss',
                     errors: settings.getErrors('customCss'),
+                    warning: cssOverridden ? (overrideAttrs.customCss.warning) : null,
                 }, cssInput) }}
             {% endif %}
         {% endnamespace %}
@@ -322,13 +393,13 @@
                 (function() {
                     var tab = document.getElementById('speakeasy-appearance');
                     var frame = tab.querySelector('.speakeasy-preview__frame');
-                    var errorToggle = tab.querySelector('.speakeasy-preview__error-toggle');
+                    var message = tab.querySelector('.speakeasy-preview__message');
                     var mode = tab.querySelector('.speakeasy-preview__mode');
                     // The field's own textarea, not Monaco's internal unnamed one.
                     var field = tab.querySelector('textarea[name*="customCss"]');
                     // Every one of these is dereferenced unqualified below, so bail
                     // as a group rather than throwing partway through a render.
-                    if (!frame || !field || !errorToggle || !mode) {
+                    if (!frame || !field || !message || !mode) {
                         return;
                     }
 
@@ -339,6 +410,7 @@
                         '__SPEAKEASY_PH__': tab.querySelector('[name*="placeholderText"]'),
                         '__SPEAKEASY_BTN__': tab.querySelector('[name*="buttonText"]'),
                         '__SPEAKEASY_ERR__': tab.querySelector('[name*="errorText"]'),
+                        '__SPEAKEASY_LOCK__': tab.querySelector('[name*="lockdownText"]'),
                     };
                     var SCHEME_QUERY = /\(\s*prefers-color-scheme\s*:\s*(dark|light)\s*\)/gi;
                     var ALWAYS = '(min-width: 0px)';
@@ -366,12 +438,12 @@
 
                     function render() {
                         var css = field.value;
-                        var showError = errorToggle.checked;
+                        var shown = message.value;
                         var wanted = mode.value;
 
                         // Resolve each copy field to its value or, when blank, its default.
                         var text = {};
-                        var key = wanted + (showError ? '1' : '0') + css;
+                        var key = wanted + shown + '\x00' + css;
                         for (var token in textFields) {
                             var el = textFields[token];
                             text[token] = el ? (el.value || el.placeholder) : '';
@@ -385,8 +457,16 @@
                         // Same `<` escape Settings::getSafeCustomCss applies, so the preview
                         // shows exactly what the real screen would.
                         var safe = css.replace(/</g, '\\00003c ');
-                        if (!showError) {
-                            safe += '\n.speakeasy__error { display: none; }';
+                        // Both states are in the document, so the unwanted one is
+                        // hidden rather than removed. Appended after the custom CSS
+                        // so a stray `display` in the field can't fight it.
+                        if (shown === 'lockdown') {
+                            safe += '\n.speakeasy:not(.speakeasy--locked) { display: none; }';
+                        } else {
+                            safe += '\n.speakeasy--locked { display: none; }';
+                            if (shown !== 'error') {
+                                safe += '\n.speakeasy__error { display: none; }';
+                            }
                         }
 
                         // Function replacement so `$&` and friends in the CSS stay literal.
@@ -412,7 +492,7 @@
                     // Polling pauses while the tab is in the background, where there is
                     // nothing to see and the page may sit open for hours.
                     field.addEventListener('input', render);
-                    errorToggle.addEventListener('change', render);
+                    message.addEventListener('change', render);
                     mode.addEventListener('change', render);
                     for (var token in textFields) {
                         if (textFields[token]) {

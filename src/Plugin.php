@@ -8,11 +8,13 @@ use bensomething\speakeasy\services\Gate;
 use Craft;
 use craft\base\ElementInterface;
 use craft\base\Model;
+use craft\enums\Color;
 use craft\events\DefineFieldLayoutCustomFieldsEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\events\TemplateEvent;
 use craft\fieldlayoutelements\CustomField;
+use craft\helpers\Cp;
 use craft\models\FieldLayout;
 use craft\services\Fields;
 use craft\web\Controller;
@@ -110,15 +112,36 @@ class Plugin extends \craft\base\Plugin
     {
         /** @var Controller $controller */
         $controller = Craft::$app->controller;
+        $settings = $this->getSettings();
+
+        // A config file can also return a callable or a BaseConfig object, neither
+        // of which names its keys up front, so only a plain array is inspectable.
+        $fileConfig = Craft::$app->getConfig()->getConfigFromFile($this->handle);
 
         return $controller->renderTemplate('speakeasy/_settings.twig', [
             'plugin' => $this,
-            'settings' => $this->getSettings(),
+            'settings' => $settings,
+            // Lockdown is set outside the CP, so it's reported as state rather than
+            // offered as a control. Built here because Cp isn't exposed to Twig.
+            'lockdownStatus' => Cp::statusLabelHtml($settings->isLockedDown() ? [
+                'color' => Color::Red,
+                'label' => Craft::t('speakeasy', 'Locked'),
+            ] : [
+                'color' => Color::Gray,
+                // Craft's hollow-ring indicator, the same one a disabled element
+                // gets, rather than a solid grey dot.
+                'indicatorClass' => 'disabled',
+                'label' => Craft::t('speakeasy', 'Off'),
+            ]),
             // Progressive enhancement: if nystudio107/craft-code-editor is present
             // (it ships with the first-party CKEditor plugin, among others), give the
             // CSS field a Monaco editor. Otherwise fall back to a plain textarea. No
             // hard dependency, no Monaco footprint forced on installs that lack it.
             'hasCodeEditor' => class_exists('nystudio107\\codeeditor\\CodeEditor'),
+            // Settings named in config/speakeasy.php win over anything saved here,
+            // Craft merges the file over the stored settings on every load. Flag
+            // them so those fields say so rather than silently discarding edits.
+            'configOverrides' => is_array($fileConfig) ? array_keys($fileConfig) : [],
         ]);
     }
 }

@@ -1,5 +1,7 @@
 {# Default unlock screen. Self-contained (no host CSS assumed). Override via the
-   plugin's `template` setting to match your site. Receives `element`. #}
+   plugin's `template` setting to match your site. Receives `element` and
+   `lockdown`. #}
+{% set lockdown = lockdown ?? false %}
 {% set flashError = craft.app.session.getFlash('error') %}
 {% set speakeasyCss = craft.app.plugins.getPlugin('speakeasy').settings.safeCustomCss %}
 <!DOCTYPE html>
@@ -17,6 +19,10 @@
     </style>
 </head>
 <body>
-    {% include 'speakeasy/_unlock_form.twig' with { element: element, flashError: flashError } only %}
+    {% if lockdown %}
+        {% include 'speakeasy/_unlock_locked.twig' only %}
+    {% else %}
+        {% include 'speakeasy/_unlock_form.twig' with { element: element, flashError: flashError } only %}
+    {% endif %}
 </body>
 </html>

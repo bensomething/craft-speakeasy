@@ -72,6 +72,7 @@ class SettingsTest extends TestCase
             ['placeholderText'],
             ['buttonText'],
             ['errorText'],
+            ['lockdownText'],
         ];
     }
 
@@ -97,6 +98,70 @@ class SettingsTest extends TestCase
         $settings->template = '_unlock';
 
         $this->assertNull($settings->getCustomErrorText());
+    }
+
+    public function testCustomLockdownTextIsUsedForTheBundledScreen(): void
+    {
+        $settings = new Settings();
+        $settings->lockdownText = 'Back soon';
+
+        $this->assertSame('Back soon', $settings->getCustomLockdownText());
+    }
+
+    public function testCustomLockdownTextIsNullWhenBlank(): void
+    {
+        $this->assertNull((new Settings())->getCustomLockdownText());
+    }
+
+    public function testCustomLockdownTextIsIgnoredWhenACustomTemplateIsSet(): void
+    {
+        $settings = new Settings();
+        $settings->lockdownText = 'Back soon';
+        $settings->template = '_unlock';
+
+        $this->assertNull($settings->getCustomLockdownText());
+    }
+
+    public function testLockdownIsOffWhenTheEnvironmentSaysNothing(): void
+    {
+        $this->assertFalse((new Settings())->isLockedDown());
+    }
+
+    public function testLockdownIsNotAStoredSetting(): void
+    {
+        // It's environment-only by design, so a stray `lockdown` key in project
+        // config or config/speakeasy.php is ignored rather than locking a site.
+        $this->assertArrayNotHasKey('lockdown', (new Settings())->attributes());
+    }
+
+    /**
+     * @param string $value Raw environment value, as it would be written in .env
+     */
+    #[DataProvider('lockdownEnvValues')]
+    public function testLockdownReadsTheEnvironmentVariable(string $value, bool $expected): void
+    {
+        $_SERVER[Settings::LOCKDOWN_ENV] = $value;
+
+        try {
+            $this->assertSame($expected, (new Settings())->isLockedDown());
+        } finally {
+            unset($_SERVER[Settings::LOCKDOWN_ENV]);
+        }
+    }
+
+    public static function lockdownEnvValues(): array
+    {
+        return [
+            // Craft normalises these to real booleans and ints before we see them.
+            'true turns it on' => ['true', true],
+            'false leaves it off' => ['false', false],
+            '1 turns it on' => ['1', true],
+            '0 leaves it off' => ['0', false],
+            // Lets a shared .env template ship the key blank.
+            'empty leaves it off' => ['', false],
+            // Fails towards locked rather than open.
+            'an unrecognised value counts as on' => ['yes', true],
+        ];
     }
 
     public function testSafeCustomCssNeutralisesAStyleTagBreakout(): void
