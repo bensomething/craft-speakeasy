@@ -1,5 +1,19 @@
 # Release Notes for Speakeasy
 
+## 1.0.0-beta.2 - 2026-07-22
+
+### Added
+- Live preview beside the **Unlock screen CSS** editor, rendered in a sandboxed iframe from the same markup as the real unlock screen and updating as you type. Includes a **Light**/**Dark** switch and a toggle to preview the error message.
+- **Placeholder text**, **Button text**, and **Error text** settings for the bundled unlock screen, each falling back to a translatable default when left blank and reflected live in the preview.
+
+### Changed
+- When a custom unlock template is set, the bundled-screen settings are now replaced by a single override notice rather than shown disabled.
+
+### Fixed
+- `--speakeasy-font` now applies to the unlock screen's input placeholder and button, which as form controls do not inherit `font-family`.
+- The unlock screen's error message no longer nudges the centred input upward when it appears.
+- Shortened the default font stack to lead with `system-ui`.
+
 ## 1.0.0-beta.1 - 2026-07-21
 
 ### Added

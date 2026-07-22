@@ -96,7 +96,6 @@
         .speakeasy-preview__toggle { display: flex; align-items: center; gap: 6px; box-shadow: none; }
         .speakeasy-preview__toggle input { margin: 0; }
         .speakeasy-preview__mode { box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
-        .speakeasy-preview__mode.hidden { display: none; }
     </style>
 
     <div id="speakeasy-general" role="tabpanel" aria-labelledby="tab-speakeasy-general">
@@ -276,7 +275,7 @@
                         <div class="speakeasy-preview__controls">
                             {# Revealed by the JS below only when the CSS defines a
                                `prefers-color-scheme` block worth switching between. #}
-                            <select class="speakeasy-preview__mode hidden" aria-label="{{ 'Preview colour scheme' | t('speakeasy') }}">
+                            <select class="speakeasy-preview__mode" aria-label="{{ 'Preview colour scheme' | t('speakeasy') }}">
                                 <option value="light">{{ 'Light' | t('speakeasy') }}</option>
                                 <option value="dark">{{ 'Dark' | t('speakeasy') }}</option>
                             </select>
@@ -392,17 +391,9 @@
                             })(text[t]));
                         }
 
-                        // Nothing to switch between unless the CSS defines a scheme block,
-                        // though the scheme is pinned either way so the preview never drifts
-                        // with whatever the machine viewing it happens to be set to.
-                        SCHEME_QUERY.lastIndex = 0;
-                        var switchable = SCHEME_QUERY.test(doc);
-                        mode.classList.toggle('hidden', !switchable);
-                        if (!switchable) {
-                            mode.value = 'light';
-                            wanted = 'light';
-                        }
-
+                        // Pin to the chosen scheme so the preview never drifts with
+                        // whatever the machine viewing it happens to be set to. The
+                        // bundled defaults always define both, so both are worth offering.
                         frame.srcdoc = forceScheme(doc, wanted);
                     }
 
