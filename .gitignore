@@ -4,3 +4,7 @@ composer.lock
 .DS_Store
 .phpunit.result.cache
 /.phpunit.cache
+
+# Personal release process, kept out of the shared repo.
+# The tester-facing checklist lives in TESTING.md.
+/RELEASING.md
