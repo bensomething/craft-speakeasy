@@ -5,9 +5,11 @@
 ### Added
 - Live preview beside the **Unlock screen CSS** editor, rendered in a sandboxed iframe from the same markup as the real unlock screen and updating as you type. Includes a **Light**/**Dark** switch and a toggle to preview the error message.
 - **Placeholder text**, **Button text**, and **Error text** settings for the bundled unlock screen, each falling back to a translatable default when left blank and reflected live in the preview.
+- `--speakeasy-placeholder-text` CSS variable, so the input placeholder colour can be set apart from the input text.
 
 ### Changed
 - When a custom unlock template is set, the bundled-screen settings are now replaced by a single override notice rather than shown disabled.
+- Renamed the unlock screen's CSS variables to spell out `background` and `text` in full and to be role-specific (for example `--speakeasy-bg` is now `--speakeasy-background`, `--speakeasy-fg` is now `--speakeasy-input-text`, and `--speakeasy-error` is now `--speakeasy-error-text`). Custom CSS saved under the old names will need updating.
 
 ### Fixed
 - `--speakeasy-font` now applies to the unlock screen's input placeholder and button, which as form controls do not inherit `font-family`.

@@ -15,29 +15,31 @@ class Settings extends Model
     public const DEFAULT_CSS = <<<'CSS'
 :root {
     color-scheme: light dark;
-    --speakeasy-bg: #fafafa;
-    --speakeasy-fg: #1a1a1a;
-    --speakeasy-input-bg: #fff;
+    --speakeasy-background: #fafafa;
+    --speakeasy-input-background: #fff;
+    --speakeasy-input-text: #1a1a1a;
+    --speakeasy-placeholder-text: #8a8a8a;
     --speakeasy-input-border: #cbcbcb;
     --speakeasy-input-border-focus: #555;
-    --speakeasy-button-bg: #1a1a1a;
-    --speakeasy-button-fg: #fff;
-    --speakeasy-button-bg-hover: #333;
-    --speakeasy-error: #c0392b;
+    --speakeasy-button-background: #1a1a1a;
+    --speakeasy-button-text: #fff;
+    --speakeasy-button-background-hover: #333;
+    --speakeasy-error-text: #c0392b;
     --speakeasy-radius: .375rem;
     --speakeasy-font: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --speakeasy-bg: #0d0d0d;
-        --speakeasy-fg: #e8e8e8;
-        --speakeasy-input-bg: #1a1a1a;
+        --speakeasy-background: #0d0d0d;
+        --speakeasy-input-background: #1a1a1a;
+        --speakeasy-input-text: #e8e8e8;
+        --speakeasy-placeholder-text: #777;
         --speakeasy-input-border: #333;
         --speakeasy-input-border-focus: #888;
-        --speakeasy-button-bg: #e8e8e8;
-        --speakeasy-button-fg: #0d0d0d;
-        --speakeasy-button-bg-hover: #fff;
+        --speakeasy-button-background: #e8e8e8;
+        --speakeasy-button-text: #0d0d0d;
+        --speakeasy-button-background-hover: #fff;
     }
 }
 CSS;

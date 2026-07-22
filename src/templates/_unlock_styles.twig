@@ -10,8 +10,9 @@ body {
     justify-content: center;
     padding: 1.5rem;
     font-family: var(--speakeasy-font);
-    background: var(--speakeasy-bg);
-    color: var(--speakeasy-fg);
+    background: var(--speakeasy-background);
+    /* Base colour for any stray text; the form's own elements set their own. */
+    color: var(--speakeasy-input-text);
 }
 .speakeasy { width: 100%; max-width: 22rem; position: relative; }
 .speakeasy__row { display: flex; gap: .5rem; }
@@ -20,29 +21,31 @@ body {
     padding: .6rem .75rem;
     border: 1px solid var(--speakeasy-input-border);
     border-radius: var(--speakeasy-radius);
-    background: var(--speakeasy-input-bg);
-    color: inherit;
+    background: var(--speakeasy-input-background);
+    color: var(--speakeasy-input-text);
     font-family: inherit;
     font-size: 1rem;
 }
 .speakeasy__input:focus { outline: none; border-color: var(--speakeasy-input-border-focus); }
+/* `opacity: 1` because Firefox otherwise fades the placeholder on top of the colour. */
+.speakeasy__input::placeholder { color: var(--speakeasy-placeholder-text); opacity: 1; }
 .speakeasy__button {
     padding: .6rem 1rem;
     border: 0;
     border-radius: var(--speakeasy-radius);
-    background: var(--speakeasy-button-bg);
-    color: var(--speakeasy-button-fg);
+    background: var(--speakeasy-button-background);
+    color: var(--speakeasy-button-text);
     font-family: inherit;
     font-weight: 500;
     cursor: pointer;
     font-size: 1rem;
 }
-.speakeasy__button:hover { background: var(--speakeasy-button-bg-hover); }
+.speakeasy__button:hover { background: var(--speakeasy-button-background-hover); }
 .speakeasy__error {
     position: absolute;
     top: 100%;
     inset-inline: 0;
     margin: .5rem 0 0;
-    color: var(--speakeasy-error);
+    color: var(--speakeasy-error-text);
     font-size: .875rem;
 }

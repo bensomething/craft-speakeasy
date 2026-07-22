@@ -234,9 +234,11 @@
 
                 {% set defaultCss = constant('bensomething\\speakeasy\\models\\Settings::DEFAULT_CSS') %}
                 {% set speakeasyVars = [
-                    '--speakeasy-bg', '--speakeasy-fg', '--speakeasy-input-bg', '--speakeasy-input-border',
-                    '--speakeasy-input-border-focus', '--speakeasy-button-bg', '--speakeasy-button-fg',
-                    '--speakeasy-button-bg-hover', '--speakeasy-error', '--speakeasy-radius', '--speakeasy-font',
+                    '--speakeasy-background',
+                    '--speakeasy-input-background', '--speakeasy-input-text', '--speakeasy-placeholder-text',
+                    '--speakeasy-input-border', '--speakeasy-input-border-focus',
+                    '--speakeasy-button-background', '--speakeasy-button-text', '--speakeasy-button-background-hover',
+                    '--speakeasy-error-text', '--speakeasy-radius', '--speakeasy-font',
                 ] %}
                 {# Input config only. The label, instructions and errors belong to the
                    surrounding `forms.field` below, which wraps the whole grid. #}

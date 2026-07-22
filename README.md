@@ -76,12 +76,12 @@ Without replacing the template, you can retheme the bundled unlock screen from t
 
 ```css
 :root {
-    --speakeasy-bg: #101418;
-    --speakeasy-button-bg: #4a7dff;
+    --speakeasy-background: #101418;
+    --speakeasy-button-background: #4a7dff;
 }
 ```
 
-Available variables: `--speakeasy-bg`, `--speakeasy-fg`, `--speakeasy-input-bg`, `--speakeasy-input-border`, `--speakeasy-input-border-focus`, `--speakeasy-button-bg`, `--speakeasy-button-fg`, `--speakeasy-button-bg-hover`, `--speakeasy-error`, `--speakeasy-radius`, `--speakeasy-font`. This field is ignored once a custom **Unlock template** is set, since your template owns its styling. If the [CKEditor plugin](https://github.com/craftcms/ckeditor) (or anything else depending on `nystudio107/craft-code-editor`) is installed, the field upgrades to a syntax-highlighting Monaco editor. Otherwise it's a plain code textarea.
+Available variables: `--speakeasy-background`, `--speakeasy-input-background`, `--speakeasy-input-text`, `--speakeasy-placeholder-text`, `--speakeasy-input-border`, `--speakeasy-input-border-focus`, `--speakeasy-button-background`, `--speakeasy-button-text`, `--speakeasy-button-background-hover`, `--speakeasy-error-text`, `--speakeasy-radius`, `--speakeasy-font`. This field is ignored once a custom **Unlock template** is set, since your template owns its styling. If the [CKEditor plugin](https://github.com/craftcms/ckeditor) (or anything else depending on `nystudio107/craft-code-editor`) is installed, the field upgrades to a syntax-highlighting Monaco editor. Otherwise it's a plain code textarea.
 
 ### Custom unlock template
 
