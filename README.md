@@ -67,8 +67,13 @@ Settings are split across two tabs. **General:**
 
 | Setting | Default | Purpose |
 | --- | --- | --- |
-| Unlock template | *(bundled)* | Override the unlock screen with your own site template |
+| Custom unlock template | *(bundled)* | Override the unlock screen with your own site template |
+| Placeholder text | Password | Placeholder in the bundled screen's password field |
+| Button text | Enter | Label on the bundled screen's submit button |
+| Error text | Incorrect password | Message shown after a failed unlock |
 | Unlock screen CSS | *(bundled variables)* | Restyle the bundled screen by overriding its CSS variables |
+
+The **Placeholder text**, **Button text**, **Error text**, and **Unlock screen CSS** settings style the bundled screen, so they're hidden when a **Custom unlock template** is set. Each text field falls back to its default (shown above) when left blank.
 
 ### Restyling the bundled screen
 
