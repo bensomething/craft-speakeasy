@@ -6,6 +6,7 @@ use bensomething\speakeasy\fields\conditions\HasPasswordConditionRule;
 use Craft;
 use craft\base\ElementInterface;
 use craft\base\Field;
+use craft\base\NestedElementInterface;
 use craft\base\PreviewableFieldInterface;
 use craft\helpers\Cp;
 use craft\helpers\Html;
@@ -257,6 +258,10 @@ class PasswordField extends Field implements PreviewableFieldInterface
             $warningText = Craft::t('speakeasy',
                 'This element type has no Craft-rendered URL, setting a password will have no effect.'
             );
+        } elseif ($this->isNestedWithoutUrl($element)) {
+            $warningText = Craft::t('speakeasy',
+                'This entry is nested inside another element and has no URL of its own, so a password here has no effect. Protect the page it appears on instead.'
+            );
         } elseif ($this->isRedundantInLayout($element)) {
             $warningText = Craft::t('speakeasy',
                 'Only the first Password field in a layout gates the element, this additional field has no effect.'
@@ -354,6 +359,28 @@ class PasswordField extends Field implements PreviewableFieldInterface
         );
 
         return $field . $warning;
+    }
+
+    /**
+     * True when the element is nested inside another element (e.g. a Matrix block)
+     * and has no URL of its own. The gate only ever runs on the element matched for
+     * a front-end URL (Gate::handleBeforeRenderPageTemplate), which a nested element
+     * without a URI format is never, so a password on it does nothing. A container
+     * field that does give its nested elements a URI format (real pages) is left
+     * unflagged, since the gate can protect those.
+     */
+    private function isNestedWithoutUrl(?ElementInterface $element): bool
+    {
+        if (!$element instanceof NestedElementInterface || $element->getField() === null) {
+            return false;
+        }
+
+        try {
+            return $element->getUriFormat() === null;
+        } catch (\Throwable) {
+            // Misconfigured ownership: no usable URL either way.
+            return true;
+        }
     }
 
     /**

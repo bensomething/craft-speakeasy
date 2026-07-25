@@ -1,6 +1,6 @@
 {
     "name": "bensomething/craft-speakeasy",
-    "description": "Per-element password protection.",
+    "description": "Password-protection for individual entries.",
     "type": "craft-plugin",
     "license": "MIT",
     "keywords": [

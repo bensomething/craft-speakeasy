@@ -1,5 +1,10 @@
 # Release Notes for Speakeasy
 
+## 1.0.0-beta.6 - 2026-07-25
+
+### Changed
+- A Password field placed on an entry that's nested inside another element, such as a Matrix block, now warns that it has no effect. A nested entry has no URL of its own for the gate to guard, so the password never applies. The warning is shown only when the entry genuinely has no URL, so a container field that gives its nested entries real pages is left alone.
+
 ## 1.0.0-beta.5 - 2026-07-22
 
 ### Added
