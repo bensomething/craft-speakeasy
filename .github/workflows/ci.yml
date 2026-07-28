@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+  # The gate is pinned to Craft's request, session and cache behaviour, so a Craft
+  # release can break it without anything here changing. The weekly run catches that
+  # drift on a schedule rather than at release time.
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A branch only needs its latest push checked.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: ${{ matrix.script }} (PHP ${{ matrix.php }}, ${{ matrix.dependencies }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.4']
+        script: [check-cs, phpstan, test]
+        # Both ends of the `^5.10` constraint. The suite stubs Craft rather than
+        # booting it, so a change to what it stubs only shows up at one end.
+        dependencies: [highest, lowest]
+        exclude:
+          # Code style is ours alone, the Craft version can't affect it.
+          - script: check-cs
+            dependencies: lowest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: bcmath, curl, dom, intl, json, mbstring, openssl, pcre, pdo, zip
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: ${{ matrix.dependencies }}
+
+      # Which Craft actually got installed is the first thing you want to know from a
+      # failure here, and `highest` moves without the repo changing.
+      - name: Report the Craft version under test
+        run: composer show craftcms/cms | head -3
+
+      - run: composer ${{ matrix.script }}
+
+  package:
+    name: package
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      # No `composer install` above: validation reads the manifest, not the tree.
+      # `--no-plugins` keeps `craftcms/plugin-installer` out of it, which errors on a
+      # relative vendor path when it does get loaded.
+      - run: composer validate --strict --no-plugins
+
+      # `export-ignore` is easy to get wrong, and only ever wrong in the published
+      # package, where it's least visible. This prints what an install would receive.
+      - name: List what ships in the dist archive
+        run: git archive --format=tar HEAD | tar --list | sort
