@@ -1,0 +1,12 @@
+# Kept out of the Composer dist archive: nothing here is needed by an install.
+/.github            export-ignore
+/.gitattributes     export-ignore
+/.gitignore         export-ignore
+/ecs.php            export-ignore
+/phpstan.neon       export-ignore
+/phpunit.xml        export-ignore
+/tests              export-ignore
+/TESTING.md         export-ignore
+
+# CHANGELOG, README and LICENCE stay in the package. Craft reads the changelog from
+# its URL, but it's the first place anyone looks inside vendor.
