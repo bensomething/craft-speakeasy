@@ -13,6 +13,7 @@ use bensomething\speakeasy\tests\support\CraftStub;
 use bensomething\speakeasy\tests\support\StubFieldLayout;
 use bensomething\speakeasy\tests\support\TestUnlockController;
 use craft\base\Element;
+use craft\elements\User;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use yii\web\ForbiddenHttpException;
@@ -57,6 +58,8 @@ final class UnlockControllerTest extends TestCase
         int $id = self::ELEMENT_ID,
         ?string $url = self::ELEMENT_URL,
         string $status = Element::STATUS_ENABLED,
+        bool $draft = false,
+        bool $viewable = false,
     ): Element {
         $field = new PasswordField(['handle' => 'pw']);
         $element = $this->createMock(Element::class);
@@ -64,6 +67,8 @@ final class UnlockControllerTest extends TestCase
         $element->method('getFieldValue')->willReturn($password === null ? null : new PasswordValue($password));
         $element->method('getUrl')->willReturn($url);
         $element->method('getStatus')->willReturn($status);
+        $element->method('getIsDraft')->willReturn($draft);
+        $element->method('canView')->willReturn($viewable);
         $element->id = $id;
 
         return $element;
@@ -189,20 +194,46 @@ final class UnlockControllerTest extends TestCase
     }
 
     /**
-     * getElementById() resolves drafts, revisions and disabled elements by
-     * default, and a draft or revision keeps the canonical element's URI. Left
-     * alone, the redirect hands an anonymous caller the URL of content with no
-     * public page, for any element id they care to try.
+     * getElementById() resolves drafts and revisions, and they keep the canonical
+     * element's URI. Left alone, the redirect hands an anonymous caller the URL of
+     * content with no public page, for any element id they care to try.
      */
-    public function testTheLookupIsConstrainedToPublishedElements(): void
+    public function testADraftIsRejectedForAnAnonymousVisitor(): void
     {
-        $this->submit('wrong');
+        $this->app->elements->add(55, $this->protectedElement('hunter2', id: 55, draft: true));
+        $this->app->request->bodyParams = ['elementId' => 55, 'password' => 'hunter2'];
 
-        self::assertSame([
-            'drafts' => false,
-            'provisionalDrafts' => false,
-            'revisions' => false,
-        ], $this->app->elements->criteria);
+        $this->expectException(NotFoundHttpException::class);
+
+        $this->controller->actionIndex();
+    }
+
+    /**
+     * A user who can already open the draft in the control panel learns nothing
+     * from the redirect. Refusing them would break previewing a protected draft
+     * with Bypass for control-panel users turned off, which is the one case where
+     * an editor meets the unlock screen rather than the page itself.
+     */
+    public function testADraftIsUnlockableByAUserWhoCanViewIt(): void
+    {
+        $this->app->user->identity = $this->createMock(User::class);
+        $this->app->elements->add(55, $this->protectedElement('hunter2', id: 55, draft: true, viewable: true));
+        $this->app->request->bodyParams = ['elementId' => 55, 'password' => 'hunter2'];
+
+        $this->controller->actionIndex();
+
+        self::assertTrue($this->gate->isUnlocked('hunter2'));
+    }
+
+    public function testADraftIsRejectedForAUserWhoCannotViewIt(): void
+    {
+        $this->app->user->identity = $this->createMock(User::class);
+        $this->app->elements->add(55, $this->protectedElement('hunter2', id: 55, draft: true, viewable: false));
+        $this->app->request->bodyParams = ['elementId' => 55, 'password' => 'hunter2'];
+
+        $this->expectException(NotFoundHttpException::class);
+
+        $this->controller->actionIndex();
     }
 
     // --- lockdown -----------------------------------------------------------

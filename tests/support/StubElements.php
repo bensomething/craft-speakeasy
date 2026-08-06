@@ -19,13 +19,8 @@ class StubElements
         $this->elements[$id] = $element;
     }
 
-    /** Criteria the last lookup was constrained by. */
-    public array $criteria = [];
-
-    public function getElementById(int $id, ?string $elementType = null, array|int|string|null $siteId = null, array $criteria = []): ?ElementInterface
+    public function getElementById(int $id): ?ElementInterface
     {
-        $this->criteria = $criteria;
-
         return $this->elements[$id] ?? null;
     }
 }

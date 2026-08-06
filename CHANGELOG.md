@@ -2,11 +2,16 @@
 
 ## Unreleased
 
+> [!IMPORTANT]
+> **Lockout window** no longer accepts 0, which previously read as "never expire" and left a visitor who reached the limit locked out until the cache was flushed. If yours is set to 0, the settings screen will now ask for a value before it will save. Set **Failed attempts** to 0 instead to turn rate limiting off. A 0 left in `config/speakeasy.php` isn't rejected, but is treated as one second.
+>
+> Existing lockouts are cleared once on upgrade, as the attempt counter is now keyed differently.
+
 ### Security
 - The unlock form no longer posts back the stored value of a password that can't be decrypted. Such a value is written to the database exactly as found, without encrypting it, so a crafted form post could put a password of the attacker's choosing into the content column in plain text while the field still rendered as empty in the control panel. The value to keep is now read from the element instead. Exploiting it needed permission to edit the element.
 - Failed unlock attempts are now counted per password rather than per element. Unlocking is keyed by password, so one unlock covers every element sharing it, but the old counter gave each element its own budget of guesses against that one password, and drafts and revisions carry a copy of the field, so each of those added another budget too.
 - Unlocking now issues a new session id, so a session id planted beforehand can't be replayed afterwards to get past the gate.
-- The unlock action no longer resolves drafts, revisions or disabled elements. Drafts and revisions keep the canonical element's URI, so the redirect could be used to read back the URL of content with no public page of its own, for any element id.
+- The unlock action no longer answers for drafts, revisions or disabled elements. Drafts and revisions keep the canonical element's URI, so the redirect could be used to read back the URL of content with no public page of its own, for any element id. A user who can already open the element in the control panel is still let through, so previewing a protected draft keeps working with **Bypass for control-panel users** turned off.
 - The attempt counter's cache key is now keyed with the security key rather than hashed with `md5()`, keeping both the password and the visitor's IP out of a leaked cache.
 - The submitted password is compared as a fixed-length token, so a guess of the wrong length is no longer measurably quicker to reject than one of the right length.
 

@@ -5,6 +5,7 @@ namespace bensomething\speakeasy\controllers;
 use bensomething\speakeasy\Plugin;
 use Craft;
 use craft\base\Element;
+use craft\base\ElementInterface;
 use craft\web\Controller;
 use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
@@ -26,26 +27,23 @@ class UnlockController extends Controller
         $elementId = (int)$request->getBodyParam('elementId');
         $submitted = (string)$request->getBodyParam('password');
 
+        $element = $elementId ? Craft::$app->getElements()->getElementById($elementId) : null;
+        if ($element === null || $element->getUrl() === null) {
+            throw new NotFoundHttpException('Element not found.');
+        }
+
         // getElementById() resolves drafts, revisions and disabled elements: it
         // applies status(null)->drafts(null)->provisionalDrafts(null)->revisions(null)
-        // internally. Drafts and revisions keep the canonical element's URI (the
-        // URI validator skips them precisely so the clone keeps it), so without
-        // this an anonymous caller could walk element ids and read the URL back
-        // off the redirect for content that has no public page of its own.
-        $element = $elementId
-            ? Craft::$app->getElements()->getElementById($elementId, criteria: [
-                'drafts' => false,
-                'provisionalDrafts' => false,
-                'revisions' => false,
-            ])
-            : null;
-
-        if (
-            $element === null ||
-            $element->getUrl() === null ||
-            $element->getStatus() === Element::STATUS_DISABLED
-        ) {
-            throw new NotFoundHttpException('Element not found.');
+        // internally. Answering for one would let an anonymous caller walk element
+        // ids and read a URL back off the redirect for content with no public page.
+        // Anyone who can already open it in the control panel learns nothing from
+        // being let through, and refusing them would break previewing a protected
+        // draft with the control-panel bypass turned off.
+        if (!$this->isPubliclyRoutable($element)) {
+            $user = Craft::$app->getUser()->getIdentity();
+            if ($user === null || !$element->canView($user)) {
+                throw new NotFoundHttpException('Element not found.');
+            }
         }
 
         $plugin = Plugin::getInstance();
@@ -93,6 +91,21 @@ class UnlockController extends Controller
         $error = $settings->getCustomErrorText() ?? Craft::t('speakeasy', 'Incorrect password');
         Craft::$app->getSession()->setError($error);
         return $this->redirect($element->getUrl());
+    }
+
+    /**
+     * Whether the element has a page of its own on the front end. A URL alone
+     * isn't enough: drafts and revisions carry a copy of the canonical element's
+     * URI (the URI validator skips them so the clone keeps it), and a disabled
+     * element keeps the URI it had when it was enabled.
+     */
+    private function isPubliclyRoutable(ElementInterface $element): bool
+    {
+        if ($element->getIsDraft() || $element->getIsRevision()) {
+            return false;
+        }
+
+        return $element->getStatus() !== Element::STATUS_DISABLED;
     }
 
     /**
