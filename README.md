@@ -100,6 +100,7 @@ return [
 | Setting | Property |
 | --- | --- |
 | Bypass for control-panel users | `bypassForCpUsers` |
+| Show element lock icon | `showLockIcon` |
 | Unlock duration | `unlockDurationSeconds` |
 | Max unlock attempts | `maxAttempts` |
 | Lockout window | `attemptWindowSeconds` |
