@@ -384,20 +384,36 @@ class PasswordField extends Field implements PreviewableFieldInterface
     }
 
     /**
-     * True when this isn't the first Password field in the element's layout. Only
-     * the first one gates the element (Gate::getPassword returns the first set),
-     * so any later Password field is inert and worth warning about.
+     * True when an earlier Password field in the element's layout already gates
+     * it, which makes this one inert and worth warning about.
+     *
+     * Emptiness is what decides it, not position: Gate::getPassword() returns the
+     * first field with a value *set*, so it passes over an earlier field left
+     * blank and this one does gate the element after all.
      */
     private function isRedundantInLayout(?ElementInterface $element): bool
     {
-        $layout = $element?->getFieldLayout();
+        if ($element === null) {
+            return false;
+        }
+
+        $layout = $element->getFieldLayout();
         if ($layout === null) {
             return false;
         }
 
         foreach ($layout->getCustomFields() as $field) {
-            if ($field instanceof self) {
-                return $field->handle !== $this->handle;
+            if (!$field instanceof self) {
+                continue;
+            }
+
+            if ($field->handle === $this->handle) {
+                return false;
+            }
+
+            $value = $element->getFieldValue($field->handle);
+            if ($value instanceof PasswordValue && !$value->isEmpty()) {
+                return true;
             }
         }
 

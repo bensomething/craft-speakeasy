@@ -8,6 +8,7 @@ use bensomething\speakeasy\fields\conditions\HasPasswordConditionRule;
 use bensomething\speakeasy\fields\PasswordField;
 use bensomething\speakeasy\fields\PasswordValue;
 use bensomething\speakeasy\fields\RevealToken;
+use bensomething\speakeasy\tests\support\StubFieldLayout;
 use craft\base\ElementContainerFieldInterface;
 use craft\base\ElementInterface;
 use craft\base\NestedElementInterface;
@@ -142,6 +143,49 @@ class PasswordFieldTest extends TestCase
     {
         $this->assertFalse($this->isNestedWithoutUrl($this->createMock(ElementInterface::class)));
         $this->assertFalse($this->isNestedWithoutUrl(null));
+    }
+
+    /**
+     * The layout's second Password field, with the first one set, so the gate
+     * never reaches it.
+     */
+    public function testALaterPasswordFieldIsFlaggedWhenTheFirstOneIsSet(): void
+    {
+        $this->assertTrue($this->isRedundant('second', ['first' => 'hunter2', 'second' => 'ignored']));
+    }
+
+    /**
+     * Gate::getPassword() returns the first Password field with a value *set*, so
+     * an earlier field left blank is passed over and this one really does gate the
+     * element. Warning here would tell the editor their password does nothing while
+     * it is in fact the one being enforced.
+     */
+    public function testALaterPasswordFieldIsNotFlaggedWhenTheFirstOneIsEmpty(): void
+    {
+        $this->assertFalse($this->isRedundant('second', ['first' => null, 'second' => 'hunter2']));
+    }
+
+    public function testTheFirstPasswordFieldIsNeverFlagged(): void
+    {
+        $this->assertFalse($this->isRedundant('first', ['first' => 'hunter2', 'second' => 'ignored']));
+    }
+
+    /**
+     * @param array<string, ?string> $values Password per field handle, in layout order.
+     */
+    private function isRedundant(string $handle, array $values): bool
+    {
+        $fields = array_map(fn(string $h) => new PasswordField(['handle' => $h]), array_keys($values));
+
+        $element = $this->createMock(ElementInterface::class);
+        $element->method('getFieldLayout')->willReturn(new StubFieldLayout($fields));
+        $element->method('getFieldValue')->willReturnCallback(
+            fn(string $h) => $values[$h] === null ? null : new PasswordValue($values[$h]),
+        );
+
+        $method = new ReflectionMethod(PasswordField::class, 'isRedundantInLayout');
+
+        return $method->invoke(new PasswordField(['handle' => $handle]), $element);
     }
 
     private function isNestedWithoutUrl(?ElementInterface $element): bool
