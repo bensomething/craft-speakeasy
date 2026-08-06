@@ -4,6 +4,7 @@ namespace bensomething\speakeasy\controllers;
 
 use bensomething\speakeasy\Plugin;
 use Craft;
+use craft\base\Element;
 use craft\web\Controller;
 use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
@@ -25,8 +26,25 @@ class UnlockController extends Controller
         $elementId = (int)$request->getBodyParam('elementId');
         $submitted = (string)$request->getBodyParam('password');
 
-        $element = $elementId ? Craft::$app->getElements()->getElementById($elementId) : null;
-        if ($element === null || $element->getUrl() === null) {
+        // getElementById() resolves drafts, revisions and disabled elements: it
+        // applies status(null)->drafts(null)->provisionalDrafts(null)->revisions(null)
+        // internally. Drafts and revisions keep the canonical element's URI (the
+        // URI validator skips them precisely so the clone keeps it), so without
+        // this an anonymous caller could walk element ids and read the URL back
+        // off the redirect for content that has no public page of its own.
+        $element = $elementId
+            ? Craft::$app->getElements()->getElementById($elementId, criteria: [
+                'drafts' => false,
+                'provisionalDrafts' => false,
+                'revisions' => false,
+            ])
+            : null;
+
+        if (
+            $element === null ||
+            $element->getUrl() === null ||
+            $element->getStatus() === Element::STATUS_DISABLED
+        ) {
             throw new NotFoundHttpException('Element not found.');
         }
 

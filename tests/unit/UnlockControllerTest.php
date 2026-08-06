@@ -52,13 +52,18 @@ final class UnlockControllerTest extends TestCase
      * Mocks the Element base class rather than the interface, since the attempt
      * key is built from the element's `id` property, which only the class declares.
      */
-    private function protectedElement(?string $password, int $id = self::ELEMENT_ID, ?string $url = self::ELEMENT_URL): Element
-    {
+    private function protectedElement(
+        ?string $password,
+        int $id = self::ELEMENT_ID,
+        ?string $url = self::ELEMENT_URL,
+        string $status = Element::STATUS_ENABLED,
+    ): Element {
         $field = new PasswordField(['handle' => 'pw']);
         $element = $this->createMock(Element::class);
         $element->method('getFieldLayout')->willReturn(new StubFieldLayout([$field]));
         $element->method('getFieldValue')->willReturn($password === null ? null : new PasswordValue($password));
         $element->method('getUrl')->willReturn($url);
+        $element->method('getStatus')->willReturn($status);
         $element->id = $id;
 
         return $element;
@@ -171,6 +176,33 @@ final class UnlockControllerTest extends TestCase
         $this->expectException(NotFoundHttpException::class);
 
         $this->controller->actionIndex();
+    }
+
+    public function testADisabledElementIsRejected(): void
+    {
+        $this->app->elements->add(66, $this->protectedElement('hunter2', id: 66, status: Element::STATUS_DISABLED));
+        $this->app->request->bodyParams = ['elementId' => 66, 'password' => 'hunter2'];
+
+        $this->expectException(NotFoundHttpException::class);
+
+        $this->controller->actionIndex();
+    }
+
+    /**
+     * getElementById() resolves drafts, revisions and disabled elements by
+     * default, and a draft or revision keeps the canonical element's URI. Left
+     * alone, the redirect hands an anonymous caller the URL of content with no
+     * public page, for any element id they care to try.
+     */
+    public function testTheLookupIsConstrainedToPublishedElements(): void
+    {
+        $this->submit('wrong');
+
+        self::assertSame([
+            'drafts' => false,
+            'provisionalDrafts' => false,
+            'revisions' => false,
+        ], $this->app->elements->criteria);
     }
 
     // --- lockdown -----------------------------------------------------------
