@@ -24,6 +24,7 @@ Note your Craft version, PHP version, and Speakeasy version somewhere. They're t
 - [ ] Clearing the password makes the entry public again.
 - [ ] Two entries sharing the same password: unlocking one opens the other.
 - [ ] Two entries with different passwords: unlocking one does **not** open the other.
+- [ ] Now unlock the second one as well. Both stay open, so unlocking one entry doesn't cost you the other.
 
 ## The field in the control panel
 
@@ -32,14 +33,18 @@ Note your Craft version, PHP version, and Speakeasy version somewhere. They're t
 - [ ] Typing, pasting, selecting and deleting all behave like a normal text field, and the value saves correctly.
 - [ ] Turn the field's **Show visibility toggle** setting off. The value now shows as plain text with no eye icon.
 - [ ] The element index shows a check in the field's column for protected entries, and nothing for public ones.
+- [ ] Protected entries carry a padlock wherever the control panel lists them: the element index, a relation field pointing at them, and card views. Public ones don't.
+- [ ] Turn **Show element lock icon** off in the plugin settings. The padlocks go, and everything else is unchanged.
 - [ ] The same Password field can't be added to one field layout twice. It drops out of the designer's list once placed.
-- [ ] Add a second, *different* Password field to the same layout. It warns that only the first one has any effect.
+- [ ] Add a second, *different* Password field to the same layout, and set a password on both. The first is marked as the one gating the entry, and the second warns that it has no effect.
+- [ ] Clear the first field, leaving the second set. The marking moves to the second field, and neither shows a warning, because an empty field is passed over rather than taking precedence.
 - [ ] Add a Password field to something with no URL of its own (an asset volume, a global set). It warns that a password will have no effect.
 
 ## Editors and lockdown
 
 - [ ] Signed into the control panel, live preview shows a protected entry's content rather than the unlock screen.
 - [ ] Turn **Bypass for control-panel users** off. A signed-in editor now gets the unlock screen too.
+- [ ] Still with bypass off, preview a *draft* of a protected entry. The unlock screen appears, and the password gets you through to the draft.
 - [ ] Turn it back on, then set `SPEAKEASY_LOCKDOWN=1` in `.env`. A protected entry returns a `403` with the lockdown message instead of the unlock screen.
 - [ ] Still locked down, a visitor who had already unlocked is shut out as well.
 - [ ] Still locked down, a signed-in editor with bypass on still gets through.
@@ -59,6 +64,8 @@ Note your Craft version, PHP version, and Speakeasy version somewhere. They're t
 - [ ] Submit the wrong password more times than **Max unlock attempts**. A too-many-attempts message appears.
 - [ ] While locked out, the *right* password is refused too.
 - [ ] After **Lockout window** seconds pass, the right password works again.
+- [ ] Two entries sharing a password share one budget: use up the attempts on one, and the other is locked out too. (Two entries with *different* passwords each get their own.)
+- [ ] **Lockout window** won't save as 0, and says so. Rate limiting is turned off with **Max unlock attempts** instead.
 
 ## Losing the security key
 
