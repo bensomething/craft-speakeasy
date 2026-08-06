@@ -10,6 +10,7 @@ use bensomething\speakeasy\services\Gate;
 use bensomething\speakeasy\tests\support\CraftStub;
 use bensomething\speakeasy\tests\support\StubFieldLayout;
 use craft\base\ElementInterface;
+use craft\events\DefineElementHtmlEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -110,6 +111,88 @@ final class GateTest extends TestCase
         ]);
 
         self::assertSame('first-password', $this->gate->getPassword($element));
+    }
+
+    // --- the control-panel indicator ----------------------------------------
+
+    public function testAnElementWithAPasswordIsProtected(): void
+    {
+        $layout = new StubFieldLayout([new PasswordField(['handle' => 'pw'])]);
+
+        self::assertTrue($this->gate->isProtected($this->element($layout, ['pw' => new PasswordValue('hunter2')])));
+        self::assertFalse($this->gate->isProtected($this->element($layout, ['pw' => new PasswordValue('')])));
+        self::assertFalse($this->gate->isProtected($this->element($layout)));
+        self::assertFalse($this->gate->isProtected($this->element(null)));
+    }
+
+    /**
+     * The indicator is rendered per element on every control-panel index, so
+     * asking whether one is protected must not pull the plaintext out. A stored
+     * value decrypts lazily, and this only ever needs to know it's there.
+     */
+    public function testCheckingForProtectionNeverDecrypts(): void
+    {
+        $resolved = false;
+        $lazy = new PasswordValue(function() use (&$resolved): array {
+            $resolved = true;
+
+            return ['hunter2', true];
+        });
+
+        $layout = new StubFieldLayout([new PasswordField(['handle' => 'pw'])]);
+
+        self::assertTrue($this->gate->isProtected($this->element($layout, ['pw' => $lazy])));
+        self::assertFalse($resolved, 'The stored value was decrypted just to draw an icon');
+    }
+
+    public function testTheChipOfAProtectedElementGetsAPadlock(): void
+    {
+        $layout = new StubFieldLayout([new PasswordField(['handle' => 'pw'])]);
+        $event = new DefineElementHtmlEvent([
+            'element' => $this->element($layout, ['pw' => new PasswordValue('hunter2')]),
+            'context' => 'index',
+            'html' => '<div class="chip"><div class="chip-content"><div class="chip-actions"></div></div></div>',
+        ]);
+
+        $this->gate->handleDefineElementHtml($event);
+
+        self::assertStringContainsString('indicators', $event->html);
+        self::assertStringContainsString('Password protected', $event->html);
+        self::assertStringNotContainsString('hunter2', $event->html);
+    }
+
+    public function testTheChipOfAnUnprotectedElementIsLeftAlone(): void
+    {
+        $html = '<div class="chip"><div class="chip-content"><div class="chip-actions"></div></div></div>';
+        $event = new DefineElementHtmlEvent([
+            'element' => $this->element(new StubFieldLayout([])),
+            'context' => 'index',
+            'html' => $html,
+        ]);
+
+        $this->gate->handleDefineElementHtml($event);
+
+        self::assertSame($html, $event->html);
+    }
+
+    /**
+     * Craft's markup isn't a contract. If the anchor moves, the icon should end
+     * up somewhere odd rather than disappearing without trace.
+     */
+    public function testThePadlockSurvivesMarkupWithNoActionMenu(): void
+    {
+        $event = new DefineElementHtmlEvent([
+            'element' => $this->element(
+                new StubFieldLayout([new PasswordField(['handle' => 'pw'])]),
+                ['pw' => new PasswordValue('hunter2')],
+            ),
+            'context' => 'field',
+            'html' => '<div class="chip"></div>',
+        ]);
+
+        $this->gate->handleDefineElementHtml($event);
+
+        self::assertStringContainsString('indicators', $event->html);
     }
 
     public function testFallsThroughAnEmptyPasswordFieldToALaterSetOne(): void

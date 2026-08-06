@@ -9,6 +9,7 @@ use Craft;
 use craft\base\ElementInterface;
 use craft\base\Model;
 use craft\enums\Color;
+use craft\events\DefineElementHtmlEvent;
 use craft\events\DefineFieldLayoutCustomFieldsEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
@@ -94,6 +95,18 @@ class Plugin extends \craft\base\Plugin
                 View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
                 fn(TemplateEvent $event) => $this->gate->handleBeforeRenderPageTemplate($event),
             );
+        }
+
+        // Mark protected elements wherever the CP lists them. Rendering only, so
+        // unlike the field type above it's safe to skip outside CP requests.
+        if (Craft::$app->getRequest()->getIsCpRequest()) {
+            foreach ([Cp::EVENT_DEFINE_ELEMENT_CHIP_HTML, Cp::EVENT_DEFINE_ELEMENT_CARD_HTML] as $event) {
+                Event::on(
+                    Cp::class,
+                    $event,
+                    fn(DefineElementHtmlEvent $event) => $this->gate->handleDefineElementHtml($event),
+                );
+            }
         }
     }
 

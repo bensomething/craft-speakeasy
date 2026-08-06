@@ -9,6 +9,7 @@ use bensomething\speakeasy\Plugin;
 use bensomething\speakeasy\services\Gate;
 use Craft;
 use craft\config\GeneralConfig;
+use craft\i18n\Locale;
 use craft\services\Security;
 use craft\web\Response;
 use ReflectionClass;
@@ -166,5 +167,14 @@ class CraftStub
     public function getI18n(): StubI18n
     {
         return $this->i18n;
+    }
+
+    /**
+     * Craft's own Locale, not a stub: `Cp::iconSvg()` asks it for the text
+     * orientation so it knows whether to flip the icon.
+     */
+    public function getLocale(): Locale
+    {
+        return new Locale('en-GB');
     }
 }

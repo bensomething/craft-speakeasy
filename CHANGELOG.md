@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- Protected elements carry a padlock wherever the control panel lists them: element indexes, relation fields and element selects. Checking for a password never decrypts it, so the icon costs nothing to draw.
+
 ### Changed
 - The unlock form no longer posts back the stored value of a password that can't be decrypted. A crafted post could otherwise put a chosen password into the database unencrypted, with the field still showing as empty. Exploiting it needed permission to edit the element.
 - Failed unlock attempts are counted per password rather than per element, so elements sharing a password now share one budget of guesses instead of each adding another.

@@ -8,7 +8,10 @@ use bensomething\speakeasy\fields\RevealToken;
 use bensomething\speakeasy\Plugin;
 use Craft;
 use craft\base\ElementInterface;
+use craft\events\DefineElementHtmlEvent;
 use craft\events\TemplateEvent;
+use craft\helpers\Cp;
+use craft\helpers\Html;
 use craft\web\View;
 use yii\base\Component;
 
@@ -24,6 +27,26 @@ class Gate extends Component
 
     public function getPassword(ElementInterface $element): ?string
     {
+        return $this->passwordValue($element)?->revealPassword(new RevealToken());
+    }
+
+    /**
+     * Whether a Password field on the element holds a value, without asking what
+     * it is. A stored value decrypts lazily and this never reveals it, so nothing
+     * is decrypted: cheap enough to call per element while rendering an index.
+     */
+    public function isProtected(ElementInterface $element): bool
+    {
+        return $this->passwordValue($element) !== null;
+    }
+
+    /**
+     * The first Password field in the element's layout with a value set. Later
+     * ones are passed over, so an earlier field left blank doesn't stop a later
+     * one gating the element.
+     */
+    private function passwordValue(ElementInterface $element): ?PasswordValue
+    {
         $layout = $element->getFieldLayout();
         if ($layout === null) {
             return null;
@@ -33,7 +56,7 @@ class Gate extends Component
             if ($field instanceof PasswordField) {
                 $value = $element->getFieldValue($field->handle);
                 if ($value instanceof PasswordValue && !$value->isEmpty()) {
-                    return $value->revealPassword(new RevealToken());
+                    return $value;
                 }
             }
         }
@@ -97,6 +120,42 @@ class Gate extends Component
     public function token(string $value): string
     {
         return hash_hmac('sha256', $value, Craft::$app->getConfig()->getGeneral()->securityKey);
+    }
+
+    /**
+     * Adds a padlock to a protected element's chip or card. Craft builds these
+     * for indexes, relation fields and element selects, and only `EntryType`
+     * implements `Indicative`, so elements have no indicator hook of their own
+     * and the icon is appended to the rendered markup instead.
+     *
+     * Mirrors the `.indicators` markup `Cp::chipHtml()` emits for components that
+     * do implement it, so it inherits the same sizing and spacing.
+     */
+    public function handleDefineElementHtml(DefineElementHtmlEvent $event): void
+    {
+        $element = $event->element;
+        if (!$element instanceof ElementInterface || !$this->isProtected($element)) {
+            return;
+        }
+
+        $label = Craft::t('speakeasy', 'Password protected');
+
+        $indicator = Html::tag('div',
+            Html::tag('div', Cp::iconSvg('lock'), [
+                'class' => ['cp-icon', 'puny'],
+                'title' => $label,
+                'aria' => ['label' => $label],
+            ]),
+            ['class' => 'indicators'],
+        );
+
+        // Before the action menu, which is the one container both chips and cards
+        // close with. Appended if it isn't there (a chip rendered without one), so
+        // a markup change upstream misplaces the icon rather than losing it.
+        $anchor = '<div class="chip-actions">';
+        $event->html = str_contains($event->html, $anchor)
+            ? str_replace($anchor, $indicator . $anchor, $event->html)
+            : $event->html . $indicator;
     }
 
     public function handleBeforeRenderPageTemplate(TemplateEvent $event): void
