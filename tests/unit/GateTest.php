@@ -161,6 +161,33 @@ final class GateTest extends TestCase
         self::assertCount(1, $this->app->session->data[Gate::SESSION_KEY]);
     }
 
+    /**
+     * Craft doesn't enable Yii's useStrictMode, so a session id planted before the
+     * unlock is accepted as-is. Without a new id the attacker who planted it is
+     * inside the gate the moment a visitor enters the password.
+     */
+    public function testUnlockingIssuesANewSessionId(): void
+    {
+        $before = $this->app->session->ids;
+
+        $this->gate->unlock('hunter2');
+
+        self::assertCount(count($before) + 1, $this->app->session->ids);
+    }
+
+    /**
+     * The id changes, but the tokens already in the session have to survive it,
+     * or unlocking a second element would shut the visitor out of the first.
+     */
+    public function testANewSessionIdKeepsTheUnlocksAlreadyHeld(): void
+    {
+        $this->gate->unlock('hunter2');
+        $this->gate->unlock('correct-horse');
+
+        self::assertTrue($this->gate->isUnlocked('hunter2'));
+        self::assertTrue($this->gate->isUnlocked('correct-horse'));
+    }
+
     public function testSessionNeverStoresThePasswordItself(): void
     {
         $this->gate->unlock('hunter2');

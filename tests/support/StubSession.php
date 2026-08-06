@@ -12,9 +12,21 @@ class StubSession
     public array $data = [];
     public array $errors = [];
 
+    /** Ids handed out by regenerateID(), oldest first. */
+    public array $ids = ['session-1'];
+
     public function get(string $key, mixed $default = null): mixed
     {
         return $this->data[$key] ?? $default;
+    }
+
+    /**
+     * PHP moves $_SESSION to the new id, so the stub keeps its data too. Records
+     * the change rather than dropping it, so tests can assert it happened.
+     */
+    public function regenerateID(bool $deleteOldSession = false): void
+    {
+        $this->ids[] = 'session-' . (count($this->ids) + 1);
     }
 
     public function set(string $key, mixed $value): void

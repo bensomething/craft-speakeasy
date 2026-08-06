@@ -54,9 +54,20 @@ class Gate extends Component
 
     public function unlock(string $password): void
     {
+        $session = Craft::$app->getSession();
+
+        // Granting access to a session id that was already in play is what makes
+        // fixation work: Craft doesn't enable Yii's useStrictMode, so a session id
+        // planted by an attacker (a sibling subdomain can set the cookie) is
+        // accepted as-is, and replaying it after a visitor unlocks would put the
+        // attacker inside the gate. Craft's own User::login() regenerates for the
+        // same reason. Existing tokens are carried over, so unlocking one element
+        // doesn't drop the others.
         $tokens = $this->tokens();
+        $session->regenerateID(true);
+
         $tokens[$this->token($password)] = time();
-        Craft::$app->getSession()->set(self::SESSION_KEY, $tokens);
+        $session->set(self::SESSION_KEY, $tokens);
     }
 
     /**
