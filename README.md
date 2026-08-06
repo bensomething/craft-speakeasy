@@ -13,7 +13,7 @@ Per-element password protection for Craft CMS. Add a **Password** field to an en
 - **Encrypted, not plaintext:** the value lives encrypted in the database, not in config or templates.
 - **Editor-driven:** editors set passwords in the element editor, no per-page developer work.
 - **Customisable:** restyle the bundled unlock screen from a live-previewed CSS editor, or replace it with your own site template.
-- **Safe defaults:** constant-time comparison, per-IP/element rate limiting, `no-store` + `noindex` on protected responses, shared unlock when passwords match, and a CP-user bypass so live preview keeps working.
+- **Safe defaults:** constant-time comparison, per-IP/password rate limiting, `no-store` + `noindex` on protected responses, shared unlock when passwords match, and a CP-user bypass so live preview keeps working.
 
 ## Requirements
 
@@ -47,11 +47,11 @@ This never reveals or decrypts the password, it only checks whether one is set.
 - **Gates the element's own template-rendered URL:** Entries, categories, and custom element types with a template. The field is hidden from the layout designer for assets, users, and global sets, which have no such URL. Placement can't be fully blocked (inline creation, project config), so on a non-gateable element the field warns that a password has no effect.
 - **Not element-less routes:** Pages rendered by a custom route or a standalone template, with no element behind them, have nothing to hold a password and so can't be gated. Protection is tied to the element it protects, by design. The password lives on the same record as the content.
 - **Not static files:** Assets are served without Craft in the request, so the gate never runs. Protecting them is a separate problem, the usual approach is a private filesystem with a controller that authorises and streams each file.
-- **Not other queries:** A protected element's fields shown in a listing, relation, eager-loaded loop, GraphQL, or the Element API are not gated, that's up to your templates (see [Note on GraphQL and the API](#note-on-graphql-and-the-api)).
+- **Not other queries:** A protected element's fields shown in a listing, relation, eager-loaded loop, GraphQL, or the Element API are not gated, that's up to your templates (see [Filtering listings](#filtering-listings) and [Note on GraphQL and the API](#note-on-graphql-and-the-api)).
 - **Never outputs the password:** `{{ entry.<handle> }}` prints `••••••••`, and the value is kept out of the search index and GraphQL schema. Twig can't unwrap it either, templates only ever get the mask. The plaintext is reachable only from Speakeasy's own PHP, which the gate uses to compare.
 - **Fail-closed on key loss:** If the security key is rotated or lost, existing passwords can't be decrypted and those elements stay locked. The field says so, and stays empty until an editor enters a new password. Saving in the meantime leaves the old value untouched, so the element never falls open and never quietly adopts the unreadable value as its password. The original can't be recovered, so re-enter passwords after a key change.
 - **Unlocks live in the visitor's session:** They end when the browser closes, and PHP may expire an idle session sooner (`session.gc_maxlifetime`, often 24 minutes). Unlock duration sets an upper bound on top of that, it can't extend an unlock beyond the session itself, so an unlock lasts for whichever ends first.
-- **Rate-limited per IP + element:** Behind a proxy or CDN, make sure Craft is configured to see the real client IP. Rate limiting relies on Craft's cache, so a null/dummy cache driver disables the lockout.
+- **Rate-limited per IP + password:** One unlock covers every element sharing a password, so the attempt budget is shared the same way. Behind a proxy or CDN, make sure Craft is configured to see the real client IP. Rate limiting relies on Craft's cache, so a null/dummy cache driver disables the lockout.
 
 ## Settings
 
@@ -61,9 +61,10 @@ Settings are split across two tabs. **General:**
 | --- | --- | --- |
 | Lockdown | off | Close every protected element at once, environment variable only (see [Lockdown](#lockdown)) |
 | Bypass for control-panel users | on | Signed-in users who can view the element skip the gate |
+| Show element lock icon | on | Mark protected elements with a padlock wherever the control panel lists them |
 | Unlock duration | 0 | How long an unlock lasts, in seconds (0 = the whole browsing session) |
-| Max unlock attempts | 5 | Failed tries per IP + element before lockout (0 disables) |
-| Lockout window | 300 | Lockout duration / attempt-count expiry, in seconds |
+| Max unlock attempts | 5 | Failed tries per IP + password before lockout (0 disables) |
+| Lockout window | 300 | Lockout duration / attempt-count expiry, in seconds (minimum 1) |
 
 **Appearance:**
 
@@ -168,6 +169,20 @@ Point the **Custom unlock template** setting at a site template. It receives an 
     <button type="submit">{{ 'Enter'|t }}</button>
 </form>
 ```
+
+## Filtering listings
+
+Speakeasy gates an element's own page, not the places you list it, so a protected entry still appears in `craft.entries` results like any other. The field handle works as a presence-only query param, so a template can filter on it:
+
+```twig
+{# Unprotected entries only #}
+{% set entries = craft.entries().section('projects').<handle>(':empty:').all() %}
+
+{# Only the protected ones #}
+{% set locked = craft.entries().section('projects').<handle>(':notempty:').all() %}
+```
+
+Presence is all you get. The stored value is encrypted, so the param tests whether a password is set, never what it is, and passing a password to match against will find nothing.
 
 ## Note on GraphQL and the API
 
