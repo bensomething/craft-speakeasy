@@ -145,47 +145,52 @@ class PasswordFieldTest extends TestCase
         $this->assertFalse($this->isNestedWithoutUrl(null));
     }
 
-    /**
-     * The layout's second Password field, with the first one set, so the gate
-     * never reaches it.
-     */
-    public function testALaterPasswordFieldIsFlaggedWhenTheFirstOneIsSet(): void
+    public function testTheFirstSetPasswordFieldIsTheGatingOne(): void
     {
-        $this->assertTrue($this->isRedundant('second', ['first' => 'hunter2', 'second' => 'ignored']));
+        $this->assertSame('first', $this->gatingHandle(['first' => 'hunter2', 'second' => 'ignored']));
     }
 
     /**
      * Gate::getPassword() returns the first Password field with a value *set*, so
-     * an earlier field left blank is passed over and this one really does gate the
-     * element. Warning here would tell the editor their password does nothing while
-     * it is in fact the one being enforced.
+     * an earlier field left blank is passed over and the later one gates. Treating
+     * position alone as the answer would tell an editor their password does nothing
+     * while it was in fact the one being enforced.
      */
-    public function testALaterPasswordFieldIsNotFlaggedWhenTheFirstOneIsEmpty(): void
+    public function testAnEmptyFieldIsPassedOverInFavourOfALaterSetOne(): void
     {
-        $this->assertFalse($this->isRedundant('second', ['first' => null, 'second' => 'hunter2']));
+        $this->assertSame('second', $this->gatingHandle(['first' => null, 'second' => 'hunter2']));
     }
 
-    public function testTheFirstPasswordFieldIsNeverFlagged(): void
+    public function testThereIsNoGatingFieldWhenNoneIsSet(): void
     {
-        $this->assertFalse($this->isRedundant('first', ['first' => 'hunter2', 'second' => 'ignored']));
+        $this->assertNull($this->gatingHandle(['first' => null, 'second' => null]));
+    }
+
+    /**
+     * A lone Password field is the only candidate, so there's nothing to
+     * disambiguate and neither callout is worth the noise.
+     */
+    public function testALonePasswordFieldIsNotSingledOut(): void
+    {
+        $this->assertNull($this->gatingHandle(['only' => 'hunter2']));
     }
 
     /**
      * @param array<string, ?string> $values Password per field handle, in layout order.
      */
-    private function isRedundant(string $handle, array $values): bool
+    private function gatingHandle(array $values): ?string
     {
-        $fields = array_map(fn(string $h) => new PasswordField(['handle' => $h]), array_keys($values));
+        $fields = array_map(fn(string $handle) => new PasswordField(['handle' => $handle]), array_keys($values));
 
         $element = $this->createMock(ElementInterface::class);
         $element->method('getFieldLayout')->willReturn(new StubFieldLayout($fields));
         $element->method('getFieldValue')->willReturnCallback(
-            fn(string $h) => $values[$h] === null ? null : new PasswordValue($values[$h]),
+            fn(string $handle) => $values[$handle] === null ? null : new PasswordValue($values[$handle]),
         );
 
-        $method = new ReflectionMethod(PasswordField::class, 'isRedundantInLayout');
+        $method = new ReflectionMethod(PasswordField::class, 'gatingHandle');
 
-        return $method->invoke(new PasswordField(['handle' => $handle]), $element);
+        return $method->invoke(new PasswordField(), $element);
     }
 
     private function isNestedWithoutUrl(?ElementInterface $element): bool
