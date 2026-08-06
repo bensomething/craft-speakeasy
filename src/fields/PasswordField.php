@@ -114,9 +114,14 @@ class PasswordField extends Field implements PreviewableFieldInterface
                 return new PasswordValue($entered);
             }
 
-            $kept = (string)($value['stored'] ?? '');
+            // The value to keep is read back off the element, never taken from the
+            // post. serializeValue() writes an undecryptable value to the database
+            // exactly as given, so a posted one would land there as an unencrypted
+            // password. Craft normalizes from the request before setting the value,
+            // so this is still the value that was loaded from the database.
+            $current = $element?->getFieldValue($this->handle);
 
-            return $kept !== '' ? PasswordValue::undecryptable($kept) : null;
+            return $current instanceof PasswordValue && $current->isUndecryptable() ? $current : null;
         }
 
         // From the edit form: already plain text.
@@ -234,11 +239,10 @@ class PasswordField extends Field implements PreviewableFieldInterface
         $this->registerJs();
 
         // An undecryptable value is ciphertext, not a password anyone chose, so it
-        // isn't offered for editing. The field starts empty and the stored value
-        // rides along in its own hidden input, which keeps the element gated if the
-        // entry is saved before a replacement is set.
+        // isn't offered for editing. The field starts empty and posts the array
+        // shape instead, which keeps the element gated if the entry is saved before
+        // a replacement is set (see normalizeValueFromRequest).
         $undecryptable = $value instanceof PasswordValue && $value->isUndecryptable();
-        $stored = $undecryptable ? $value->revealPassword(new RevealToken()) : '';
 
         $current = $undecryptable ? '' : ($value instanceof PasswordValue ? $value->revealPassword(new RevealToken()) : (is_string($value) ? $value : ''));
         $showToggle = $this->showVisibilityToggle && !$inline;
@@ -271,17 +275,13 @@ class PasswordField extends Field implements PreviewableFieldInterface
 
         // Real value (submitted). Craft namespaces this to fields[handle]. When the
         // stored value can't be decrypted the field posts fields[handle][password]
-        // plus fields[handle][stored] instead, so leaving it alone re-saves the
-        // original untouched rather than re-encrypting it (see normalizeValueFromRequest).
+        // instead, so leaving it alone re-saves the original untouched rather than
+        // re-encrypting it (see normalizeValueFromRequest).
         $real = Html::hiddenInput(
             $undecryptable ? "{$this->handle}[password]" : $this->handle,
             $current,
             ['data-speakeasy-real' => true],
         );
-
-        if ($undecryptable) {
-            $real .= Html::hiddenInput("{$this->handle}[stored]", $stored);
-        }
 
         // Display copy, not submitted. Masked with bullets unless revealed.
         $display = Html::tag('input', '', [

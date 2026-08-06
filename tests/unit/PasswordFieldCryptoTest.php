@@ -169,7 +169,7 @@ final class PasswordFieldCryptoTest extends TestCase
     public function testEnteringANewPasswordReplacesTheUndecryptableValue(): void
     {
         $field = new PasswordField(['handle' => 'pw']);
-        $value = $field->normalizeValueFromRequest(['password' => 'new-password', 'stored' => 'old-ciphertext'], null);
+        $value = $field->normalizeValueFromRequest(['password' => 'new-password'], $this->elementHolding('old-ciphertext'));
 
         self::assertFalse($value->isUndecryptable());
 
@@ -186,18 +186,64 @@ final class PasswordFieldCryptoTest extends TestCase
     public function testLeavingAnUndecryptableValueAloneKeepsItExactlyAsFound(): void
     {
         $field = new PasswordField(['handle' => 'pw']);
-        $value = $field->normalizeValueFromRequest(['password' => '', 'stored' => 'old-ciphertext'], null);
+        $value = $field->normalizeValueFromRequest(['password' => ''], $this->elementHolding('old-ciphertext'));
 
         self::assertTrue($value->isUndecryptable());
         self::assertFalse($value->isEmpty(), 'The element would fall open');
         self::assertSame('old-ciphertext', $field->serializeValue($value, null));
     }
 
-    public function testAnEmptyPostedPairClearsTheField(): void
+    public function testAnEmptyPostWithNothingToKeepClearsTheField(): void
     {
         $field = new PasswordField(['handle' => 'pw']);
 
-        self::assertNull($field->normalizeValueFromRequest(['password' => '', 'stored' => ''], null));
+        self::assertNull($field->normalizeValueFromRequest(['password' => ''], null));
+    }
+
+    /**
+     * serializeValue() writes an undecryptable value straight to the database
+     * without encrypting it, so the value it keeps must come off the element and
+     * never out of the post. Otherwise a hand-crafted form post lands a plaintext
+     * password in the content column while the CP still renders the field empty.
+     */
+    public function testAPostedValueCannotBeSmuggledPastEncryption(): void
+    {
+        $field = new PasswordField(['handle' => 'pw']);
+        $value = $field->normalizeValueFromRequest(
+            ['password' => '', 'stored' => 'letmein'],
+            $this->elementHolding('old-ciphertext'),
+        );
+
+        self::assertSame('old-ciphertext', $field->serializeValue($value, null));
+    }
+
+    /**
+     * The same post against a field whose value decrypts normally. There is
+     * nothing to keep, so it clears rather than adopting the posted string.
+     */
+    public function testAPostedValueIsIgnoredWhenTheCurrentValueIsUsable(): void
+    {
+        $field = new PasswordField(['handle' => 'pw']);
+        $element = $this->createMock(\craft\base\ElementInterface::class);
+        $element->method('getFieldValue')->willReturn(new PasswordValue('hunter2'));
+
+        $value = $field->normalizeValueFromRequest(['password' => '', 'stored' => 'letmein'], $element);
+
+        self::assertNull($value);
+        self::assertNull($field->serializeValue($value, null));
+    }
+
+    /**
+     * An element whose stored password can't be decrypted under the current
+     * security key, as the edit form would have loaded it.
+     */
+    private function elementHolding(string $ciphertext): \craft\base\ElementInterface
+    {
+        $element = $this->createMock(\craft\base\ElementInterface::class);
+        $element->method('getFieldValue')
+            ->willReturn((new PasswordField(['handle' => 'pw']))->normalizeValue($ciphertext, null));
+
+        return $element;
     }
 
     /**
