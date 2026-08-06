@@ -341,6 +341,20 @@ final class UnlockControllerTest extends TestCase
         self::assertSame([900], array_values($this->app->cache->ttls));
     }
 
+    /**
+     * The settings model rejects 0, but config/speakeasy.php is merged over the
+     * stored settings without going through validation, so the value still has to
+     * be safe at the point it reaches the cache.
+     */
+    public function testAWindowOfZeroFromTheConfigFileStillExpires(): void
+    {
+        $this->settings->attemptWindowSeconds = 0;
+
+        $this->submit('wrong');
+
+        self::assertSame([1], array_values($this->app->cache->ttls));
+    }
+
     public function testRateLimitingCanBeTurnedOff(): void
     {
         $this->settings->maxAttempts = 0;

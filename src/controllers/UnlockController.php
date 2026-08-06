@@ -111,7 +111,10 @@ class UnlockController extends Controller
 
         try {
             $count = (int)$cache->get($key) + 1;
-            $cache->set($key, $count, $ttl);
+            // Never 0: the cache reads that as "never expire", so the counter
+            // would outlive the lockout and never let the visitor back in. The
+            // settings model rejects 0, but config/speakeasy.php isn't validated.
+            $cache->set($key, $count, max(1, $ttl));
             return $count;
         } finally {
             $mutex->release($key);
