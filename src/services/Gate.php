@@ -8,6 +8,7 @@ use bensomething\speakeasy\fields\RevealToken;
 use bensomething\speakeasy\Plugin;
 use Craft;
 use craft\base\ElementInterface;
+use craft\errors\InvalidHtmlTagException;
 use craft\events\DefineElementHtmlEvent;
 use craft\events\TemplateEvent;
 use craft\helpers\Cp;
@@ -133,6 +134,10 @@ class Gate extends Component
      */
     public function handleDefineElementHtml(DefineElementHtmlEvent $event): void
     {
+        if (!Plugin::getInstance()->getSettings()->showLockIcon) {
+            return;
+        }
+
         $element = $event->element;
         if (!$element instanceof ElementInterface || !$this->isProtected($element)) {
             return;
@@ -149,13 +154,38 @@ class Gate extends Component
             ['class' => 'indicators'],
         );
 
-        // Before the action menu, which is the one container both chips and cards
-        // close with. Appended if it isn't there (a chip rendered without one), so
-        // a markup change upstream misplaces the icon rather than losing it.
-        $anchor = '<div class="chip-actions">';
-        $event->html = str_contains($event->html, $anchor)
-            ? str_replace($anchor, $indicator . $anchor, $event->html)
-            : $event->html . $indicator;
+        $event->html = $this->withIndicator($event->html, $indicator);
+    }
+
+    /**
+     * Places the indicator beside the element's title. Chips and cards are built
+     * differently, so each has its own anchor, and markup matching neither is
+     * returned untouched: a decorative icon is better missing than adrift outside
+     * the component it belongs to.
+     */
+    private function withIndicator(string $html, string $indicator): string
+    {
+        // A card's title sits in `.card-heading`, so the icon goes in as that
+        // div's last child. parseTag() finds where its contents end, which no
+        // amount of string matching can do reliably once the title is a link.
+        $heading = strpos($html, '<div class="card-heading">');
+        if ($heading !== false) {
+            try {
+                $end = Html::parseTag($html, $heading)['htmlEnd'] ?? null;
+            } catch (InvalidHtmlTagException) {
+                $end = null;
+            }
+
+            return $end !== null ? substr_replace($html, $indicator, $end, 0) : $html;
+        }
+
+        // A chip has no title wrapper to sit inside, so the icon goes after the
+        // label, as a sibling of the action menu that follows it.
+        $actions = '<div class="chip-actions">';
+
+        return str_contains($html, $actions)
+            ? str_replace($actions, $indicator . $actions, $html)
+            : $html;
     }
 
     public function handleBeforeRenderPageTemplate(TemplateEvent $event): void

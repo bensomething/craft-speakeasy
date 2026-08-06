@@ -21,6 +21,10 @@ return [
     // Keeps live preview usable.
     //'bypassForCpUsers' => true,
 
+    // Mark protected elements with a padlock wherever the CP lists them: element
+    // indexes, relation fields and element selects.
+    //'showLockIcon' => true,
+
     // How long an unlock lasts before the password is asked for again. 0 keeps it
     // for the whole browsing session. Can't outlive the session itself, so an
     // unlock ends at whichever comes first.

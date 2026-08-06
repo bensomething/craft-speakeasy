@@ -164,6 +164,15 @@
                 errors: settings.getErrors('bypassForCpUsers'),
             } | merge(overrideAttrs.bypassForCpUsers ?? {})) }}
 
+            {{ forms.lightswitchField({
+                label: 'Show element lock icon' | t('speakeasy'),
+                instructions: 'Mark protected elements with a padlock wherever the control panel lists them: element indexes, relation fields and element selects.' | t('speakeasy'),
+                id: 'showLockIcon',
+                name: 'showLockIcon',
+                on: settings.showLockIcon,
+                errors: settings.getErrors('showLockIcon'),
+            } | merge(overrideAttrs.showLockIcon ?? {})) }}
+
             {{ forms.textField({
                 label: 'Unlock duration' | t('speakeasy'),
                 instructions: 'How long an unlock lasts before the visitor has to enter the password again. Set to 0 to keep it for the whole browsing session.' | t('speakeasy'),

@@ -6,6 +6,7 @@ namespace bensomething\speakeasy\tests\unit;
 
 use bensomething\speakeasy\fields\PasswordField;
 use bensomething\speakeasy\fields\PasswordValue;
+use bensomething\speakeasy\models\Settings;
 use bensomething\speakeasy\services\Gate;
 use bensomething\speakeasy\tests\support\CraftStub;
 use bensomething\speakeasy\tests\support\StubFieldLayout;
@@ -18,11 +19,12 @@ use PHPUnit\Framework\TestCase;
 final class GateTest extends TestCase
 {
     private CraftStub $app;
+    private Settings $settings;
     private Gate $gate;
 
     protected function setUp(): void
     {
-        [$this->app, , $this->gate] = CraftStub::install();
+        [$this->app, $this->settings, $this->gate] = CraftStub::install();
     }
 
     protected function tearDown(): void
@@ -161,6 +163,25 @@ final class GateTest extends TestCase
         self::assertStringNotContainsString('hunter2', $event->html);
     }
 
+    public function testThePadlockCanBeTurnedOff(): void
+    {
+        $this->settings->showLockIcon = false;
+
+        $html = '<div class="chip"><div class="chip-content"><div class="chip-actions"></div></div></div>';
+        $event = new DefineElementHtmlEvent([
+            'element' => $this->element(
+                new StubFieldLayout([new PasswordField(['handle' => 'pw'])]),
+                ['pw' => new PasswordValue('hunter2')],
+            ),
+            'context' => 'index',
+            'html' => $html,
+        ]);
+
+        $this->gate->handleDefineElementHtml($event);
+
+        self::assertSame($html, $event->html);
+    }
+
     public function testTheChipOfAnUnprotectedElementIsLeftAlone(): void
     {
         $html = '<div class="chip"><div class="chip-content"><div class="chip-actions"></div></div></div>';
@@ -176,23 +197,50 @@ final class GateTest extends TestCase
     }
 
     /**
-     * Craft's markup isn't a contract. If the anchor moves, the icon should end
-     * up somewhere odd rather than disappearing without trace.
+     * A card's title lives in `.card-heading`, so the icon goes in beside it
+     * rather than after the whole component, which is outside the card's border.
      */
-    public function testThePadlockSurvivesMarkupWithNoActionMenu(): void
+    public function testTheCardPadlockSitsBesideTheTitle(): void
     {
         $event = new DefineElementHtmlEvent([
-            'element' => $this->element(
-                new StubFieldLayout([new PasswordField(['handle' => 'pw'])]),
-                ['pw' => new PasswordValue('hunter2')],
-            ),
-            'context' => 'field',
-            'html' => '<div class="chip"></div>',
+            'element' => $this->protectedElement(),
+            'context' => 'index',
+            'html' => '<div class="card"><div class="card-content">'
+                . '<div class="card-heading"><a href="#">Cast for Craft CMS</a></div>'
+                . '<div class="card-body">LIVE</div></div></div>',
         ]);
 
         $this->gate->handleDefineElementHtml($event);
 
-        self::assertStringContainsString('indicators', $event->html);
+        self::assertStringContainsString('Cast for Craft CMS</a><div class="indicators">', $event->html);
+        self::assertStringEndsWith('</div></div></div>', $event->html);
+    }
+
+    /**
+     * Craft's markup isn't a contract. If neither anchor is there the icon is
+     * dropped, since a decorative padlock adrift outside the component it
+     * belongs to reads as a bug, where a missing one merely reads as absent.
+     */
+    public function testThePadlockIsDroppedRatherThanMisplaced(): void
+    {
+        $html = '<div class="chip"></div>';
+        $event = new DefineElementHtmlEvent([
+            'element' => $this->protectedElement(),
+            'context' => 'field',
+            'html' => $html,
+        ]);
+
+        $this->gate->handleDefineElementHtml($event);
+
+        self::assertSame($html, $event->html);
+    }
+
+    private function protectedElement(): ElementInterface
+    {
+        return $this->element(
+            new StubFieldLayout([new PasswordField(['handle' => 'pw'])]),
+            ['pw' => new PasswordValue('hunter2')],
+        );
     }
 
     public function testFallsThroughAnEmptyPasswordFieldToALaterSetOne(): void

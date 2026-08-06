@@ -3,7 +3,8 @@
 ## Unreleased
 
 ### Added
-- Protected elements carry a padlock wherever the control panel lists them: element indexes, relation fields and element selects. Checking for a password never decrypts it, so the icon costs nothing to draw.
+- Protected elements carry a padlock wherever the control panel lists them: element indexes, relation fields, element selects and cards. Checking for a password never decrypts it, so the icon costs nothing to draw.
+- **Show element lock icon** setting, on by default, for turning that padlock off.
 
 ### Changed
 - The unlock form no longer posts back the stored value of a password that can't be decrypted. A crafted post could otherwise put a chosen password into the database unencrypted, with the field still showing as empty. Exploiting it needed permission to edit the element.

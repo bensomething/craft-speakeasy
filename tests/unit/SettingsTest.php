@@ -22,6 +22,7 @@ class SettingsTest extends TestCase
         $this->assertSame('', $settings->template);
         $this->assertSame('', $settings->customCss);
         $this->assertTrue($settings->bypassForCpUsers);
+        $this->assertTrue($settings->showLockIcon);
         $this->assertTrue($settings->validate());
     }
 

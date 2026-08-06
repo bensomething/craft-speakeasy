@@ -60,6 +60,7 @@ CSS;
     public string $errorText = '';
     public string $lockdownText = '';
     public bool $bypassForCpUsers = true;
+    public bool $showLockIcon = true;
 
     /**
      * Lockdown is deliberately not a setting. It's operational, per-environment
@@ -79,6 +80,7 @@ CSS;
     {
         return [
             'bypassForCpUsers' => Craft::t('speakeasy', 'Bypass for control-panel users'),
+            'showLockIcon' => Craft::t('speakeasy', 'Show element lock icon'),
             'unlockDurationSeconds' => Craft::t('speakeasy', 'Unlock duration'),
             'maxAttempts' => Craft::t('speakeasy', 'Max unlock attempts'),
             'attemptWindowSeconds' => Craft::t('speakeasy', 'Lockout window'),
@@ -108,7 +110,7 @@ CSS;
             // falls back to its default rather than rendering as blank copy.
             [['template', 'customCss', 'placeholderText', 'buttonText', 'errorText', 'lockdownText'], 'trim'],
             [['template', 'customCss', 'placeholderText', 'buttonText', 'errorText', 'lockdownText'], 'string'],
-            [['bypassForCpUsers'], 'boolean'],
+            [['bypassForCpUsers', 'showLockIcon'], 'boolean'],
         ]);
     }
 
