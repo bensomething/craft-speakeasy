@@ -1,6 +1,6 @@
 # Release Notes for Speakeasy
 
-## Unreleased
+## 1.0.0-beta.7 - 2026-08-06
 
 ### Added
 - Protected elements carry a padlock wherever the control panel lists them: element indexes, relation fields, element selects and cards. Checking for a password never decrypts it, so the icon costs nothing to draw.
@@ -15,7 +15,7 @@
 - A password guess of the wrong length is no longer measurably quicker to reject than one of the right length.
 
 ### Fixed
-- **Lockout window** can no longer be set to 0, which the cache read as "never expire" and left a visitor who reached the limit locked out until it was flushed by hand. Turn rate limiting off with **Failed attempts** instead. A stored 0 needs changing before the settings screen will save, and one in `config/speakeasy.php` is treated as one second.
+- **Lockout window** can no longer be set to 0, which the cache read as "never expire" and left a visitor who reached the limit locked out until it was flushed by hand. Turn rate limiting off with **Max unlock attempts** instead. A stored 0 needs changing before the settings screen will save, and one in `config/speakeasy.php` is treated as one second.
 - When a layout holds two Password fields, the one gating the element now says so, instead of leaving the editor to work it out. The "no effect" warning is shown only on a field that holds a password another field is overriding, since the gate falls through an empty field to a later one.
 - Settings define their validation rules through `defineRules()`, restoring the `EVENT_DEFINE_RULES` extension point.
 - Validation errors name the setting as the settings screen labels it, rather than Yii's guess at a name from the attribute ("Attempt Window Seconds").
