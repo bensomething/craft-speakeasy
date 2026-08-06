@@ -2,6 +2,7 @@
 
 namespace bensomething\speakeasy\models;
 
+use Craft;
 use craft\base\Model;
 use craft\helpers\App;
 
@@ -69,6 +70,27 @@ CSS;
      */
     public const LOCKDOWN_ENV = 'SPEAKEASY_LOCKDOWN';
 
+    /**
+     * The names the settings screen shows, so a validation error names the
+     * setting the editor is looking at rather than Yii's guess at a label from
+     * the attribute name ("Attempt Window Seconds").
+     */
+    public function attributeLabels(): array
+    {
+        return [
+            'bypassForCpUsers' => Craft::t('speakeasy', 'Bypass for control-panel users'),
+            'unlockDurationSeconds' => Craft::t('speakeasy', 'Unlock duration'),
+            'maxAttempts' => Craft::t('speakeasy', 'Max unlock attempts'),
+            'attemptWindowSeconds' => Craft::t('speakeasy', 'Lockout window'),
+            'template' => Craft::t('speakeasy', 'Custom unlock template'),
+            'customCss' => Craft::t('speakeasy', 'Unlock screen CSS'),
+            'placeholderText' => Craft::t('speakeasy', 'Placeholder text'),
+            'buttonText' => Craft::t('speakeasy', 'Button text'),
+            'errorText' => Craft::t('speakeasy', 'Error text'),
+            'lockdownText' => Craft::t('speakeasy', 'Lockdown text'),
+        ];
+    }
+
     protected function defineRules(): array
     {
         return array_merge(parent::defineRules(), [
@@ -77,7 +99,11 @@ CSS;
             // as the counter's TTL, where Yii reads 0 as "never expire", so a
             // visitor who hit the limit would stay locked out until the cache was
             // flushed by hand. Rate limiting is turned off with maxAttempts.
-            [['attemptWindowSeconds'], 'integer', 'min' => 1],
+            // Craft renders field errors through inline Markdown, so the setting
+            // names come out bold rather than as literal asterisks.
+            [['attemptWindowSeconds'], 'integer', 'min' => 1, 'tooSmall' => Craft::t('speakeasy',
+                '**Lockout window** must be at least 1 second. Set **Max unlock attempts** to 0 to turn rate limiting off.'
+            )],
             // Trim first, so a field holding only whitespace counts as empty and
             // falls back to its default rather than rendering as blank copy.
             [['template', 'customCss', 'placeholderText', 'buttonText', 'errorText', 'lockdownText'], 'trim'],

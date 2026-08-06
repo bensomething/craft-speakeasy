@@ -67,6 +67,28 @@ class SettingsTest extends TestCase
         $this->assertArrayHasKey('attemptWindowSeconds', $settings->getErrors());
     }
 
+    /**
+     * Yii's default would name the attribute ("Attempt Window Seconds must be no
+     * less than 1"), which is neither the label on the settings screen nor advice
+     * anyone can act on.
+     */
+    public function testTheLockoutWindowErrorNamesTheSettingAndTheWayOut(): void
+    {
+        $settings = new Settings();
+        $settings->attemptWindowSeconds = 0;
+        $settings->validate();
+
+        $error = $settings->getFirstError('attemptWindowSeconds');
+
+        $this->assertStringContainsString('Lockout window', (string) $error);
+        $this->assertStringContainsString('Max unlock attempts', (string) $error);
+    }
+
+    public function testSettingsAreLabelledAsTheSettingsScreenNamesThem(): void
+    {
+        $this->assertSame('Lockout window', (new Settings())->getAttributeLabel('attemptWindowSeconds'));
+    }
+
     #[DataProvider('textSettings')]
     public function testWhitespaceOnlyTextSettingsValidateToEmpty(string $attribute): void
     {
