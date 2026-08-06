@@ -190,6 +190,9 @@
                 errors: settings.getErrors('maxAttempts'),
             } | merge(overrideAttrs.maxAttempts ?? {})) }}
 
+            {# min is 1, not 0: the cache reads 0 as "never expire", so the counter
+               would outlive the lockout. Rate limiting is turned off with Max
+               unlock attempts instead. #}
             {{ forms.textField({
                 label: 'Lockout window' | t('speakeasy'),
                 instructions: 'How long a lockout lasts and how long failed attempts are counted.' | t('speakeasy'),
@@ -198,8 +201,6 @@
                 value: settings.attemptWindowSeconds,
                 suffix: 'seconds' | t('speakeasy'),
                 type: 'number',
-                {# Not 0: that's "never expire" to the cache, i.e. a permanent
-                   lockout. Rate limiting is turned off with Failed attempts. #}
                 min: 1,
                 errors: settings.getErrors('attemptWindowSeconds'),
             } | merge(overrideAttrs.attemptWindowSeconds ?? {})) }}
