@@ -16,7 +16,7 @@ class UnlockController extends Controller
 {
     protected array|bool|int $allowAnonymous = true;
 
-    // Failed attempts are rate-limited per IP + element.
+    // Failed attempts are rate-limited per IP + password.
     public function actionIndex(): ?Response
     {
         $this->requirePostRequest();
@@ -40,7 +40,18 @@ class UnlockController extends Controller
             throw new ForbiddenHttpException('Unlocking is disabled.');
         }
 
-        $attemptKey = 'speakeasy:attempts:' . md5($request->getUserIP() . ':' . $element->id);
+        $expected = $plugin->gate->getPassword($element);
+
+        // Counted per password, not per element: one unlock covers every element
+        // sharing that password, so keying on the element would hand a fresh
+        // budget to each of them (and to each draft and revision, which carry a
+        // copy of the field) while the same secret is being guessed. An element
+        // with no password has nothing to guess, so it keys on itself. Keyed with
+        // the security key rather than hashed, so a leaked cache gives up neither
+        // the password nor the client IP.
+        $attemptKey = 'speakeasy:attempts:' . $plugin->gate->token(
+            'attempt:' . $request->getUserIP() . ':' . ($expected ?? "element:{$element->id}"),
+        );
 
         // Count this attempt before checking the password, so parallel requests
         // can't outrun a non-atomic counter and brute-force past the limit.
@@ -52,9 +63,10 @@ class UnlockController extends Controller
             return $this->redirect($element->getUrl());
         }
 
-        $expected = $plugin->gate->getPassword($element);
-
-        if ($expected !== null && hash_equals($expected, $submitted)) {
+        // Compared as tokens rather than raw strings: hash_equals() is constant
+        // time for equal-length inputs but returns early on a length mismatch,
+        // which would time the password's length out to an anonymous caller.
+        if ($expected !== null && hash_equals($plugin->gate->token($expected), $plugin->gate->token($submitted))) {
             Craft::$app->getCache()->delete($attemptKey);
             $plugin->gate->unlock($expected);
             return $this->redirect($element->getUrl());

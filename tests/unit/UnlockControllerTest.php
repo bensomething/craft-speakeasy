@@ -248,7 +248,7 @@ final class UnlockControllerTest extends TestCase
         self::assertSame(['Too many attempts. Please try again later.'], array_slice($this->app->session->errors, -1));
     }
 
-    public function testTheLimitIsPerElement(): void
+    public function testTheLimitIsPerPassword(): void
     {
         $this->settings->maxAttempts = 1;
         $this->app->elements->add(88, $this->protectedElement('other-password', id: 88));
@@ -257,11 +257,33 @@ final class UnlockControllerTest extends TestCase
         $this->submit('wrong');
         $this->assertNotUnlocked();
 
-        // A different element has its own counter, so it's still reachable.
+        // An element behind a different password is a different secret, so it has
+        // its own counter and is still reachable.
         $this->app->request->bodyParams = ['elementId' => 88, 'password' => 'other-password'];
         $this->controller->actionIndex();
 
         self::assertTrue($this->gate->isUnlocked('other-password'));
+    }
+
+    /**
+     * Unlocking is keyed by password, so one unlock opens every element sharing
+     * it. The attempt budget has to be keyed the same way, or each extra element
+     * behind the password (and each draft and revision, which carry a copy of the
+     * field) multiplies the guesses available against that one secret.
+     */
+    public function testElementsSharingAPasswordShareTheLimit(): void
+    {
+        $this->settings->maxAttempts = 1;
+        $this->app->elements->add(88, $this->protectedElement('hunter2', id: 88));
+
+        $this->submit('wrong');
+
+        $this->app->request->bodyParams = ['elementId' => 88, 'password' => 'hunter2'];
+        $this->controller->actionIndex();
+
+        $this->assertNotUnlocked();
+        self::assertSame(['Too many attempts. Please try again later.'], array_slice($this->app->session->errors, -1));
+        self::assertCount(1, $this->app->cache->data, 'Both elements should share one counter');
     }
 
     public function testTheLimitIsPerIp(): void
@@ -346,5 +368,19 @@ final class UnlockControllerTest extends TestCase
 
         $key = array_key_first($this->app->cache->data);
         self::assertStringNotContainsString('203.0.113.1', $key);
+    }
+
+    /**
+     * The key now covers the password, so it has to be keyed with the security
+     * key rather than plainly hashed: a bare digest of a short IP + password pair
+     * is worth running a wordlist against if the cache ever leaks.
+     */
+    public function testTheAttemptKeyDoesNotGiveUpThePassword(): void
+    {
+        $this->submit('wrong');
+
+        $key = array_key_first($this->app->cache->data);
+        self::assertStringNotContainsString('hunter2', $key);
+        self::assertStringNotContainsString(md5('203.0.113.1:hunter2'), $key);
     }
 }

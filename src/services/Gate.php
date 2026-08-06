@@ -79,11 +79,13 @@ class Gate extends Component
 
     /**
      * Keyed with the security key so a leaked session store can't be run
-     * against a wordlist to recover the passwords themselves.
+     * against a wordlist to recover the passwords themselves. Public because the
+     * unlock action keys its rate-limit counter the same way, and compares
+     * tokens rather than passwords (equal length, so no length is leaked).
      */
-    private function token(string $password): string
+    public function token(string $value): string
     {
-        return hash_hmac('sha256', $password, Craft::$app->getConfig()->getGeneral()->securityKey);
+        return hash_hmac('sha256', $value, Craft::$app->getConfig()->getGeneral()->securityKey);
     }
 
     public function handleBeforeRenderPageTemplate(TemplateEvent $event): void
