@@ -69,16 +69,21 @@ CSS;
      */
     public const LOCKDOWN_ENV = 'SPEAKEASY_LOCKDOWN';
 
-    public function rules(): array
+    protected function defineRules(): array
     {
-        return [
-            [['maxAttempts', 'attemptWindowSeconds', 'unlockDurationSeconds'], 'integer', 'min' => 0],
+        return array_merge(parent::defineRules(), [
+            [['maxAttempts', 'unlockDurationSeconds'], 'integer', 'min' => 0],
+            // Unlike the other two, 0 isn't "off" here: it's passed to the cache
+            // as the counter's TTL, where Yii reads 0 as "never expire", so a
+            // visitor who hit the limit would stay locked out until the cache was
+            // flushed by hand. Rate limiting is turned off with maxAttempts.
+            [['attemptWindowSeconds'], 'integer', 'min' => 1],
             // Trim first, so a field holding only whitespace counts as empty and
             // falls back to its default rather than rendering as blank copy.
             [['template', 'customCss', 'placeholderText', 'buttonText', 'errorText', 'lockdownText'], 'trim'],
             [['template', 'customCss', 'placeholderText', 'buttonText', 'errorText', 'lockdownText'], 'string'],
             [['bypassForCpUsers'], 'boolean'],
-        ];
+        ]);
     }
 
     /**

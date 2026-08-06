@@ -44,14 +44,27 @@ class SettingsTest extends TestCase
         ];
     }
 
-    public function testZeroIsAllowedForIntegerSettings(): void
+    public function testZeroIsAllowedWhereItMeansOff(): void
     {
         $settings = new Settings();
         $settings->maxAttempts = 0;
-        $settings->attemptWindowSeconds = 0;
         $settings->unlockDurationSeconds = 0;
 
         $this->assertTrue($settings->validate());
+    }
+
+    /**
+     * The window is the counter's cache TTL, and Yii reads a TTL of 0 as "never
+     * expire", so a visitor who hit the limit would be locked out until the cache
+     * was flushed by hand. Rate limiting is turned off with maxAttempts instead.
+     */
+    public function testZeroIsRejectedForTheLockoutWindow(): void
+    {
+        $settings = new Settings();
+        $settings->attemptWindowSeconds = 0;
+
+        $this->assertFalse($settings->validate());
+        $this->assertArrayHasKey('attemptWindowSeconds', $settings->getErrors());
     }
 
     #[DataProvider('textSettings')]

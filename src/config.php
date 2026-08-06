@@ -26,7 +26,8 @@ return [
     // unlock ends at whichever comes first.
     //'unlockDurationSeconds' => 0,
 
-    // Failed attempts per visitor IP + element before a lockout. 0 disables rate
+    // Failed attempts per visitor IP + password before a lockout, and how long
+    // both the count and the lockout last. maxAttempts of 0 disables rate
     // limiting. Relies on Craft's cache, so a null cache driver disables it too.
     //'attemptWindowSeconds' => 300,
     //'maxAttempts' => 5,

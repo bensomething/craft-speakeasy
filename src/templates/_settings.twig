@@ -198,7 +198,9 @@
                 value: settings.attemptWindowSeconds,
                 suffix: 'seconds' | t('speakeasy'),
                 type: 'number',
-                min: 0,
+                {# Not 0: that's "never expire" to the cache, i.e. a permanent
+                   lockout. Rate limiting is turned off with Failed attempts. #}
+                min: 1,
                 errors: settings.getErrors('attemptWindowSeconds'),
             } | merge(overrideAttrs.attemptWindowSeconds ?? {})) }}
         {% endnamespace %}
