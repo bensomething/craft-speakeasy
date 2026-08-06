@@ -1,5 +1,20 @@
 # Release Notes for Speakeasy
 
+## Unreleased
+
+### Security
+- The unlock form no longer posts back the stored value of a password that can't be decrypted. Such a value is written to the database exactly as found, without encrypting it, so a crafted form post could put a password of the attacker's choosing into the content column in plain text while the field still rendered as empty in the control panel. The value to keep is now read from the element instead. Exploiting it needed permission to edit the element.
+- Failed unlock attempts are now counted per password rather than per element. Unlocking is keyed by password, so one unlock covers every element sharing it, but the old counter gave each element its own budget of guesses against that one password, and drafts and revisions carry a copy of the field, so each of those added another budget too.
+- Unlocking now issues a new session id, so a session id planted beforehand can't be replayed afterwards to get past the gate.
+- The unlock action no longer resolves drafts, revisions or disabled elements. Drafts and revisions keep the canonical element's URI, so the redirect could be used to read back the URL of content with no public page of its own, for any element id.
+- The attempt counter's cache key is now keyed with the security key rather than hashed with `md5()`, keeping both the password and the visitor's IP out of a leaked cache.
+- The submitted password is compared as a fixed-length token, so a guess of the wrong length is no longer measurably quicker to reject than one of the right length.
+
+### Fixed
+- **Lockout window** can no longer be set to 0. It's the attempt counter's cache lifetime, where 0 means "never expire", so a visitor who reached the limit stayed locked out until the cache was flushed by hand. Rate limiting is still turned off by setting **Failed attempts** to 0.
+- A second Password field is now only called out as having no effect when the first one actually holds a password. The gate falls through an empty field to a later one, so the warning could appear on the field that was really gating the element.
+- Plugin settings define their validation rules through `defineRules()` rather than overriding `rules()`, restoring the `EVENT_DEFINE_RULES` extension point for anything building on them.
+
 ## 1.0.0-beta.6 - 2026-07-25
 
 ### Changed
