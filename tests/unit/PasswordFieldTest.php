@@ -8,7 +8,6 @@ use bensomething\speakeasy\fields\conditions\HasPasswordConditionRule;
 use bensomething\speakeasy\fields\PasswordField;
 use bensomething\speakeasy\fields\PasswordValue;
 use bensomething\speakeasy\fields\RevealToken;
-use bensomething\speakeasy\tests\support\StubFieldLayout;
 use craft\base\ElementContainerFieldInterface;
 use craft\base\ElementInterface;
 use craft\base\NestedElementInterface;
@@ -82,8 +81,8 @@ class PasswordFieldTest extends TestCase
     }
 
     /**
-     * A second instance of the same field would be inert, since only the first
-     * Password field in a layout gates the element.
+     * An element has one password, so a second instance of the same field would
+     * be inert.
      */
     public function testTheFieldCannotBePlacedTwiceInALayout(): void
     {
@@ -143,54 +142,6 @@ class PasswordFieldTest extends TestCase
     {
         $this->assertFalse($this->isNestedWithoutUrl($this->createMock(ElementInterface::class)));
         $this->assertFalse($this->isNestedWithoutUrl(null));
-    }
-
-    public function testTheFirstSetPasswordFieldIsTheGatingOne(): void
-    {
-        $this->assertSame('first', $this->gatingHandle(['first' => 'hunter2', 'second' => 'ignored']));
-    }
-
-    /**
-     * Gate::getPassword() returns the first Password field with a value *set*, so
-     * an earlier field left blank is passed over and the later one gates. Treating
-     * position alone as the answer would tell an editor their password does nothing
-     * while it was in fact the one being enforced.
-     */
-    public function testAnEmptyFieldIsPassedOverInFavourOfALaterSetOne(): void
-    {
-        $this->assertSame('second', $this->gatingHandle(['first' => null, 'second' => 'hunter2']));
-    }
-
-    public function testThereIsNoGatingFieldWhenNoneIsSet(): void
-    {
-        $this->assertNull($this->gatingHandle(['first' => null, 'second' => null]));
-    }
-
-    /**
-     * A lone Password field is the only candidate, so there's nothing to
-     * disambiguate and neither callout is worth the noise.
-     */
-    public function testALonePasswordFieldIsNotSingledOut(): void
-    {
-        $this->assertNull($this->gatingHandle(['only' => 'hunter2']));
-    }
-
-    /**
-     * @param array<string, ?string> $values Password per field handle, in layout order.
-     */
-    private function gatingHandle(array $values): ?string
-    {
-        $fields = array_map(fn(string $handle) => new PasswordField(['handle' => $handle]), array_keys($values));
-
-        $element = $this->createMock(ElementInterface::class);
-        $element->method('getFieldLayout')->willReturn(new StubFieldLayout($fields));
-        $element->method('getFieldValue')->willReturnCallback(
-            fn(string $handle) => $values[$handle] === null ? null : new PasswordValue($values[$handle]),
-        );
-
-        $method = new ReflectionMethod(PasswordField::class, 'gatingHandle');
-
-        return $method->invoke(new PasswordField(), $element);
     }
 
     private function isNestedWithoutUrl(?ElementInterface $element): bool

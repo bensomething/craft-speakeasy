@@ -11,6 +11,7 @@ use craft\base\Model;
 use craft\enums\Color;
 use craft\events\DefineElementHtmlEvent;
 use craft\events\DefineFieldLayoutCustomFieldsEvent;
+use craft\events\DefineRulesEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\events\TemplateEvent;
@@ -85,6 +86,28 @@ class Plugin extends \craft\base\Plugin
                         $field instanceof CustomField && $field->getField() instanceof PasswordField
                     ));
                 }
+            }
+        );
+
+        // isMultiInstance() only stops the same field going in twice. This stops two
+        // different ones, as an element has one password. Project config applies
+        // layouts without validating, so the gate still copes with two (see
+        // Gate::passwordValue()).
+        Event::on(
+            FieldLayout::class,
+            Model::EVENT_DEFINE_RULES,
+            static function(DefineRulesEvent $event): void {
+                /** @var FieldLayout $layout */
+                $layout = $event->sender;
+                $event->rules[] = [['customFields'], static function() use ($layout): void {
+                    $count = count(array_filter(
+                        $layout->getCustomFields(),
+                        static fn($field) => $field instanceof PasswordField,
+                    ));
+                    if ($count > 1) {
+                        $layout->addError('customFields', Craft::t('speakeasy', 'Only one Password field can be added to a field layout.'));
+                    }
+                }, 'skipOnEmpty' => false];
             }
         );
 

@@ -42,9 +42,10 @@ class Gate extends Component
     }
 
     /**
-     * The first Password field in the element's layout with a value set. Later
-     * ones are passed over, so an earlier field left blank doesn't stop a later
-     * one gating the element.
+     * The first Password field in the element's layout with a value set. A layout
+     * only holds one once validated, but project config applies layouts without
+     * validating, so an earlier field left blank still mustn't stop a later one
+     * gating the element.
      */
     private function passwordValue(ElementInterface $element): ?PasswordValue
     {

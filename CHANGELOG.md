@@ -1,5 +1,10 @@
 # Release Notes for Speakeasy
 
+## Unreleased
+
+### Changed
+- A field layout can hold only one Password field, as an element has one password. Saving a layout with two different Password fields is refused. Layouts that already have two keep working as before, with the first field holding a value gating the element, until the layout is next saved. The editor notices saying which of the two is gating are gone.
+
 ## 1.0.0-beta.7 - 2026-08-06
 
 ### Added

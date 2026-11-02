@@ -36,8 +36,7 @@ Note your Craft version, PHP version, and Speakeasy version somewhere. They're t
 - [ ] Protected entries carry a padlock wherever the control panel lists them: the element index, a relation field pointing at them, and card views. Public ones don't.
 - [ ] Turn **Show element lock icon** off in the plugin settings. The padlocks go, and everything else is unchanged.
 - [ ] The same Password field can't be added to one field layout twice. It drops out of the designer's list once placed.
-- [ ] Add a second, *different* Password field to the same layout, and set a password on both. The first is marked as the one gating the entry, and the second warns that it has no effect.
-- [ ] Clear the first field, leaving the second set. The marking moves to the second field, and neither shows a warning, because an empty field is passed over rather than taking precedence.
+- [ ] Add a second, *different* Password field to the same layout and save. The layout refuses with "Only one Password field can be added to a field layout."
 - [ ] Add a Password field to something with no URL of its own (an asset volume, a global set). It warns that a password will have no effect.
 
 ## Editors and lockdown

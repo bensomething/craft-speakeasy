@@ -41,13 +41,9 @@ class PasswordField extends Field implements PreviewableFieldInterface
     }
 
     /**
-     * Only the first Password field in a layout gates the element, so a second
-     * instance of the same field could never do anything. Craft takes an already
-     * placed field out of the layout designer's list, which stops the mistake
-     * being made rather than warning about it after the fact.
-     *
-     * Two *different* Password fields can still be placed, since Craft has no way
-     * to rule that out. inputHtml() warns on the later ones.
+     * An element has one password, so a layout holds this field at most once.
+     * This only stops the same field going in twice. Plugin::init() adds a layout
+     * rule that also stops two different Password fields.
      */
     public static function isMultiInstance(): bool
     {
@@ -248,14 +244,9 @@ class PasswordField extends Field implements PreviewableFieldInterface
         $showToggle = $this->showVisibilityToggle && !$inline;
         $revealed = !$this->showVisibilityToggle;
 
-        // Which of the layout's Password fields is actually gating, when there's
-        // more than one to choose between. Null when there's nothing to say.
-        $gating = $this->gatingHandle($element);
-
         // The layout designer hides this field from non-gate-able element types, but
         // placement can't be fully prevented (inline field creation, project config).
-        // Warn on the actual element edit where the gate can't run. Also warn when
-        // this field holds a password that another Password field is overriding.
+        // Warn on the actual element edit where the gate can't run.
         $warningText = null;
         if ($undecryptable) {
             $warningText = Craft::t('speakeasy',
@@ -269,20 +260,8 @@ class PasswordField extends Field implements PreviewableFieldInterface
             $warningText = Craft::t('speakeasy',
                 'This entry is nested inside another element and has no URL of its own, so a password here has no effect. Protect the page it appears on instead.'
             );
-        } elseif ($current !== '' && $gating !== null && $gating !== $this->handle) {
-            $warningText = Craft::t('speakeasy',
-                'Another Password field is gating this element, so the password here has no effect.'
-            );
         }
         $warningId = $this->getInputId() . '-warning';
-
-        // The counterpart: say which field is live, rather than leaving the editor
-        // to work it out from the absence of a warning. Only when the warnings above
-        // have nothing to say, so the two can't contradict each other.
-        $noticeText = $warningText === null && $gating === $this->handle
-            ? Craft::t('speakeasy', 'This is the password gating the element.')
-            : null;
-        $noticeId = $this->getInputId() . '-notice';
 
         // Real value (submitted). Craft namespaces this to fields[handle]. When the
         // stored value can't be decrypted the field posts fields[handle][password]
@@ -306,7 +285,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
             'spellcheck' => 'false',
             'data-lpignore' => 'true',
             'data-1p-ignore' => 'true',
-            'aria-describedby' => $warningText !== null ? $warningId : ($noticeText !== null ? $noticeId : null),
+            'aria-describedby' => $warningText !== null ? $warningId : null,
             'disabled' => $inline,
             'class' => ['text', 'fullwidth', 'code'],
             'style' => $showToggle ? ['padding-right' => '1.75rem'] : [],
@@ -353,30 +332,26 @@ class PasswordField extends Field implements PreviewableFieldInterface
         ]);
 
         if ($warningText !== null) {
-            return $field . $this->calloutHtml($warningId, 'warning', Craft::t('app', 'Warning:'), $warningText);
-        }
-
-        if ($noticeText !== null) {
-            return $field . $this->calloutHtml($noticeId, 'notice', Craft::t('app', 'Tip:'), $noticeText);
+            return $field . $this->warningHtml($warningId, $warningText);
         }
 
         return $field;
     }
 
     /**
-     * Mirrors the markup and spacing Craft gives a field layout element's warning or
-     * tip (see Cp::_noticeHtml); the native `.field > .warning` margin can't reach us
-     * inside the input container. `$label` is read by screen readers only.
+     * Mirrors the markup and spacing Craft gives a field layout element's warning
+     * (see Cp::_noticeHtml); the native `.field > .warning` margin can't reach us
+     * inside the input container.
      */
-    private function calloutHtml(string $id, string $class, string $label, string $text): string
+    private function warningHtml(string $id, string $text): string
     {
         return Html::tag('p',
             Html::tag('span', '', ['class' => 'icon', 'aria-hidden' => 'true']) .
-            Html::tag('span', $label . ' ', ['class' => 'visually-hidden']) .
+            Html::tag('span', Craft::t('app', 'Warning:') . ' ', ['class' => 'visually-hidden']) .
             Html::tag('span', Html::encode($text)),
             [
                 'id' => $id,
-                'class' => [$class, 'has-icon'],
+                'class' => ['warning', 'has-icon'],
                 'style' => ['margin-block' => '5px 0', 'margin-inline' => '0'],
             ]
         );
@@ -402,38 +377,6 @@ class PasswordField extends Field implements PreviewableFieldInterface
             // Misconfigured ownership: no usable URL either way.
             return true;
         }
-    }
-
-    /**
-     * The handle of the Password field gating this element, when the layout holds
-     * more than one and so there's something to disambiguate. Null otherwise: a
-     * lone Password field needs no explaining, and neither does a layout where
-     * none of them is set.
-     *
-     * Emptiness decides it, not position. Gate::getPassword() returns the first
-     * field with a value *set*, so it passes over an earlier field left blank and
-     * a later one gates the element after all.
-     */
-    private function gatingHandle(?ElementInterface $element): ?string
-    {
-        $layout = $element?->getFieldLayout();
-        if ($layout === null) {
-            return null;
-        }
-
-        $fields = array_filter($layout->getCustomFields(), fn($field) => $field instanceof self);
-        if (count($fields) < 2) {
-            return null;
-        }
-
-        foreach ($fields as $field) {
-            $value = $element->getFieldValue($field->handle);
-            if ($value instanceof PasswordValue && !$value->isEmpty()) {
-                return $field->handle;
-            }
-        }
-
-        return null;
     }
 
     private function registerJs(): void
