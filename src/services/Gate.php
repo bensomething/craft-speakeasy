@@ -26,6 +26,9 @@ class Gate extends Component
     // password unlock together. Values are the unlock timestamp.
     public const SESSION_KEY = 'speakeasy.unlocked';
 
+    /**
+     * @internal Will change shape if a field gains more than one password.
+     */
     public function getPassword(ElementInterface $element): ?string
     {
         return $this->passwordValue($element)?->revealPassword(new RevealToken());
@@ -66,6 +69,7 @@ class Gate extends Component
         return null;
     }
 
+    /** @internal */
     public function isUnlocked(string $password): bool
     {
         $unlockedAt = $this->tokens()[$this->token($password)] ?? null;
@@ -77,6 +81,7 @@ class Gate extends Component
         return $duration <= 0 || $unlockedAt + $duration > time();
     }
 
+    /** @internal */
     public function unlock(string $password): void
     {
         $session = Craft::$app->getSession();
@@ -118,6 +123,8 @@ class Gate extends Component
      * against a wordlist to recover the passwords themselves. Public because the
      * unlock action keys its rate-limit counter the same way, and compares
      * tokens rather than passwords (equal length, so no length is leaked).
+     *
+     * @internal
      */
     public function token(string $value): string
     {

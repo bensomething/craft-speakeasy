@@ -41,19 +41,6 @@ class PasswordValue implements Stringable
     }
 
     /**
-     * A stored value already known not to decrypt, wrapped without re-checking.
-     * Used when an untouched undecryptable value is posted back by the editor,
-     * so it can be written away again exactly as it was found.
-     */
-    public static function undecryptable(string $stored): self
-    {
-        $value = new self($stored);
-        $value->undecryptable = true;
-
-        return $value;
-    }
-
-    /**
      * Unwrap the plaintext, resolving a deferred value on first use. Twig invokes
      * accessors with no arguments, so a template call falls through to the mask;
      * only a caller holding a RevealToken (i.e. Speakeasy itself) gets the real value.
