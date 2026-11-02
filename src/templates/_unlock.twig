@@ -5,7 +5,7 @@
 {% set flashError = craft.app.session.getFlash('error') %}
 {% set speakeasyCss = craft.app.plugins.getPlugin('speakeasy').settings.safeCustomCss %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ craft.app.language }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

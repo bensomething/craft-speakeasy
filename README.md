@@ -171,6 +171,8 @@ Point the **Custom unlock template** setting at a site template. It receives an 
 </form>
 ```
 
+The bundled screen uses the element's title as the page `<title>`. If a title is itself something to keep private, a custom template can leave it out.
+
 ## Filtering listings
 
 Speakeasy gates an element's own page, not the places you list it, so a protected entry still appears in `craft.entries` results like any other. The field handle works as a presence-only query param, so a template can filter on it:
