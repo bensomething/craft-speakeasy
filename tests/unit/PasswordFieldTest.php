@@ -95,9 +95,9 @@ class PasswordFieldTest extends TestCase
     }
 
     /**
-     * A nested element (e.g. a Matrix block) with no URI format has no page of its
-     * own for the gate to guard, so inputHtml warns. inputHtml itself needs the CP
-     * HTML helpers, so the warning predicate is exercised directly instead.
+     * An element with no URI format has no page of its own for the gate to guard,
+     * so inputHtml warns. inputHtml itself needs the CP HTML helpers, so the
+     * warning predicate is exercised directly instead.
      */
     public function testANestedElementWithoutAUrlIsFlagged(): void
     {
@@ -105,48 +105,53 @@ class PasswordFieldTest extends TestCase
         $element->method('getField')->willReturn($this->createMock(ElementContainerFieldInterface::class));
         $element->method('getUriFormat')->willReturn(null);
 
-        $this->assertTrue($this->isNestedWithoutUrl($element));
+        $this->assertTrue($this->hasNoUrl($element));
     }
 
-    public function testATopLevelElementIsNotFlaggedAsNested(): void
+    /**
+     * URLs are set per section and site, not per entry type, so an entry in a
+     * section without URLs is flagged even though entries as a type have them.
+     */
+    public function testATopLevelElementWithoutAUrlIsFlagged(): void
     {
-        // getField() is null when the entry belongs to a section rather than a
-        // container field, so it isn't nested and the layout-level checks apply.
-        $element = $this->createMock(NestedElementInterface::class);
-        $element->method('getField')->willReturn(null);
+        $element = $this->createMock(ElementInterface::class);
+        $element->method('getUriFormat')->willReturn(null);
 
-        $this->assertFalse($this->isNestedWithoutUrl($element));
+        $this->assertTrue($this->hasNoUrl($element));
     }
 
-    public function testANestedElementWithItsOwnUrlIsNotFlagged(): void
+    public function testAnElementWithAUrlIsNotFlagged(): void
     {
-        // A container field that gives its nested elements a URI format produces
-        // real pages the gate can protect, so no warning.
-        $element = $this->createMock(NestedElementInterface::class);
-        $element->method('getField')->willReturn($this->createMock(ElementContainerFieldInterface::class));
-        $element->method('getUriFormat')->willReturn('{slug}');
+        // Includes a container field that gives its nested elements a URI format,
+        // which produces real pages the gate can protect.
+        $nested = $this->createMock(NestedElementInterface::class);
+        $nested->method('getField')->willReturn($this->createMock(ElementContainerFieldInterface::class));
+        $nested->method('getUriFormat')->willReturn('{slug}');
 
-        $this->assertFalse($this->isNestedWithoutUrl($element));
+        $topLevel = $this->createMock(ElementInterface::class);
+        $topLevel->method('getUriFormat')->willReturn('news/{slug}');
+
+        $this->assertFalse($this->hasNoUrl($nested));
+        $this->assertFalse($this->hasNoUrl($topLevel));
     }
 
-    public function testMisconfiguredNestedOwnershipIsTreatedAsHavingNoUrl(): void
+    public function testMisconfiguredOwnershipIsTreatedAsHavingNoUrl(): void
     {
         $element = $this->createMock(NestedElementInterface::class);
         $element->method('getField')->willReturn($this->createMock(ElementContainerFieldInterface::class));
         $element->method('getUriFormat')->willThrowException(new RuntimeException('bad ownership'));
 
-        $this->assertTrue($this->isNestedWithoutUrl($element));
+        $this->assertTrue($this->hasNoUrl($element));
     }
 
-    public function testANonNestedElementIsNeverFlagged(): void
+    public function testNoElementIsNeverFlagged(): void
     {
-        $this->assertFalse($this->isNestedWithoutUrl($this->createMock(ElementInterface::class)));
-        $this->assertFalse($this->isNestedWithoutUrl(null));
+        $this->assertFalse($this->hasNoUrl(null));
     }
 
-    private function isNestedWithoutUrl(?ElementInterface $element): bool
+    private function hasNoUrl(?ElementInterface $element): bool
     {
-        $method = new ReflectionMethod(PasswordField::class, 'isNestedWithoutUrl');
+        $method = new ReflectionMethod(PasswordField::class, 'hasNoUrl');
 
         return $method->invoke(new PasswordField(), $element);
     }

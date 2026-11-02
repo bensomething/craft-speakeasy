@@ -38,6 +38,7 @@ Note your Craft version, PHP version, and Speakeasy version somewhere. They're t
 - [ ] The same Password field can't be added to one field layout twice. It drops out of the designer's list once placed.
 - [ ] Add a second, *different* Password field to the same layout and save. The layout refuses with "Only one Password field can be added to a field layout."
 - [ ] Add a Password field to something with no URL of its own (an asset volume, a global set). It warns that a password will have no effect.
+- [ ] Open an entry in a section with **Entries in this section have their own URLs** off for the current site. The Password field warns that a password will have no effect.
 
 ## Editors and lockdown
 

@@ -256,10 +256,14 @@ class PasswordField extends Field implements PreviewableFieldInterface
             $warningText = Craft::t('speakeasy',
                 'This element type has no Craft-rendered URL, setting a password will have no effect.'
             );
-        } elseif ($this->isNestedWithoutUrl($element)) {
-            $warningText = Craft::t('speakeasy',
-                'This entry is nested inside another element and has no URL of its own, so a password here has no effect. Protect the page it appears on instead.'
-            );
+        } elseif ($this->hasNoUrl($element)) {
+            $warningText = $element instanceof NestedElementInterface && $element->getField() !== null
+                ? Craft::t('speakeasy',
+                    'This entry is nested inside another element and has no URL of its own, so a password here has no effect. Protect the page it appears on instead.'
+                )
+                : Craft::t('speakeasy',
+                    'This element has no URL on this site, so a password here has no effect.'
+                );
         }
         $warningId = $this->getInputId() . '-warning';
 
@@ -358,23 +362,24 @@ class PasswordField extends Field implements PreviewableFieldInterface
     }
 
     /**
-     * True when the element is nested inside another element (e.g. a Matrix block)
-     * and has no URL of its own. The gate only ever runs on the element matched for
-     * a front-end URL (Gate::handleBeforeRenderPageTemplate), which a nested element
-     * without a URI format is never, so a password on it does nothing. A container
-     * field that does give its nested elements a URI format (real pages) is left
-     * unflagged, since the gate can protect those.
+     * True when the element has no URL of its own on its site. The gate only ever
+     * runs on the element matched for a front-end URL
+     * (Gate::handleBeforeRenderPageTemplate), so a password on it does nothing.
+     *
+     * URLs are set per section/site (or per container field, for nested entries),
+     * not per element type, so this is checked on the element rather than hidden
+     * in the layout designer the way hasUris() is.
      */
-    private function isNestedWithoutUrl(?ElementInterface $element): bool
+    private function hasNoUrl(?ElementInterface $element): bool
     {
-        if (!$element instanceof NestedElementInterface || $element->getField() === null) {
+        if ($element === null) {
             return false;
         }
 
         try {
             return $element->getUriFormat() === null;
         } catch (\Throwable) {
-            // Misconfigured ownership: no usable URL either way.
+            // Misconfigured ownership or site settings: no usable URL either way.
             return true;
         }
     }

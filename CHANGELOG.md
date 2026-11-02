@@ -4,6 +4,7 @@
 
 ### Changed
 - A field layout can hold only one Password field, as an element has one password. Saving a layout with two different Password fields is refused. Layouts that already have two keep working as before, with the first field holding a value gating the element, until the layout is next saved. The editor notices saying which of the two is gating are gone.
+- A Password field now warns that it has no effect on an element without a URL on the current site, such as an entry in a section with URLs turned off. Previously only nested entries were caught.
 
 ## 1.0.0-beta.7 - 2026-08-06
 
