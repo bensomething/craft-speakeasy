@@ -119,6 +119,11 @@ class CraftStub
         return $this->configService;
     }
 
+    public function getVersion(): string
+    {
+        return '5.10.0';
+    }
+
     public function getSecurity(): Security
     {
         return $this->security ??= new Security();

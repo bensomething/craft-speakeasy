@@ -88,9 +88,9 @@ class PasswordField extends Field implements PreviewableFieldInterface
                 return [$stored, false];
             }
 
-            $decrypted = Craft::$app->getSecurity()->decryptByKey($decoded);
+            $decrypted = Cipher::decrypt($decoded);
 
-            return $decrypted === false ? [$stored, false] : [$decrypted, true];
+            return $decrypted === null ? [$stored, false] : [$decrypted, true];
         });
     }
 
@@ -141,7 +141,7 @@ class PasswordField extends Field implements PreviewableFieldInterface
             return null;
         }
 
-        return base64_encode(Craft::$app->getSecurity()->encryptByKey($plain));
+        return base64_encode(Cipher::encrypt($plain));
     }
 
     /**

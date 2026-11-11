@@ -88,6 +88,22 @@ final class PasswordFieldCryptoTest extends TestCase
     }
 
     /**
+     * An empty key makes Yii's hash_hkdf() throw rather than fail. That has to
+     * read as "can't decrypt" too, or the edit screen crashes (seen on Craft 6
+     * after `securityKey` was removed).
+     */
+    public function testAnEmptySecurityKeyFailsClosedInsteadOfThrowing(): void
+    {
+        $stored = $this->field->serializeValue(new PasswordValue('hunter2'), null);
+
+        CraftStub::install(securityKey: '');
+        $value = (new PasswordField(['handle' => 'pw']))->normalizeValue($stored, null);
+
+        self::assertTrue($value->isUndecryptable());
+        self::assertSame($stored, $value->revealPassword(new RevealToken()));
+    }
+
+    /**
      * The undecryptable element stays locked in practice: the gate compares the
      * submitted password against the raw ciphertext, which no visitor can supply,
      * and the original password no longer opens it.

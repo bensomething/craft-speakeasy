@@ -19,7 +19,7 @@
     },
     "require": {
         "php": "^8.2",
-        "craftcms/cms": "^5.10"
+        "craftcms/cms": "^5.10|^6.0.0-beta.1"
     },
     "require-dev": {
         "craftcms/ecs": "dev-main",
@@ -28,7 +28,8 @@
         "phpunit/phpunit": "^11.5"
     },
     "suggest": {
-        "nystudio107/craft-code-editor": "Adds a Monaco (syntax-highlighting) editor to the unlock-screen CSS setting. Already present if you use the CKEditor plugin."
+        "nystudio107/craft-code-editor": "Adds a Monaco (syntax-highlighting) editor to the unlock-screen CSS setting. Already present if you use the CKEditor plugin.",
+        "craftcms/yii2-adapter": "Required to use Speakeasy with Craft CMS 6."
     },
     "autoload": {
         "psr-4": {

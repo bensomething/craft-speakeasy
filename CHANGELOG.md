@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+- Added support for Craft CMS 6, via the Yii2 adapter (`craftcms/yii2-adapter`). On Craft 6, passwords are encrypted with Laravel’s encrypter (`APP_KEY`). Passwords saved on Craft 5 still decrypt as long as the old `securityKey` is configured.
+
+### Fixed
+- A missing or empty security key no longer crashes the edit screen. The password is treated as undecryptable, so the element stays locked.
+
 ### Changed
 - A field layout can hold only one Password field, as an element has one password. Saving a layout with two different Password fields is refused. Layouts that already have two keep working as before, with the first field holding a value gating the element, until the layout is next saved. The editor notices saying which of the two is gating are gone.
 - A Password field now warns that it has no effect on an element without a URL on the current site, such as an entry in a section with URLs turned off. Previously only nested entries were caught.
