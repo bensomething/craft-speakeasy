@@ -59,6 +59,11 @@
            flex item that has to shrink; the input fills it. */
         #speakeasy-general .flex > .textwrapper { flex: 0 0 100px; }
 
+        /* Craft 6's `.hidden` sits in a cascade layer without `!important`, so it
+           loses to ordinary rules and the inactive tab's panel stays on screen.
+           Craft 5's is already `display: none !important`. */
+        #speakeasy-general.hidden, #speakeasy-appearance.hidden { display: none !important; }
+
         /* Four quarter-width fields in a row.
            `minmax(0, …)` lets the tracks shrink below the inputs' natural width so
            they stay even instead of blowing out. Craft gives each `.field` its own
@@ -90,9 +95,9 @@
             display: block;
             width: 100%;
             height: 100%;
-            border: 1px solid var(--hairline-color);
-            border-radius: var(--large-border-radius);
-            background: var(--gray-050);
+            border: 1px solid var(--c-color-border-quiet, var(--hairline-color));
+            border-radius: var(--c-radius-md, var(--large-border-radius));
+            background: var(--c-color-neutral-fill-quiet, var(--gray-050));
         }
 
         /* Controls float over the bottom-right of the frame. */
@@ -116,9 +121,9 @@
             padding: 0 6px;
             font-size: 12px;
             line-height: 1;
-            color: var(--text-color);
-            background: var(--white);
-            border: 1px solid var(--hairline-color);
+            color: var(--c-text-default, var(--text-color));
+            background: var(--c-form-control-fill, var(--white));
+            border: 1px solid var(--c-color-border-quiet, var(--hairline-color));
             border-radius: 4px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, .12);
         }
@@ -181,6 +186,7 @@
                 value: settings.unlockDurationSeconds,
                 suffix: 'seconds' | t('speakeasy'),
                 type: 'number',
+                size: 6,
                 min: 0,
                 errors: settings.getErrors('unlockDurationSeconds'),
             } | merge(overrideAttrs.unlockDurationSeconds ?? {})) }}
@@ -195,6 +201,7 @@
                 value: settings.maxAttempts,
                 suffix: 'attempts' | t('speakeasy'),
                 type: 'number',
+                size: 6,
                 min: 0,
                 errors: settings.getErrors('maxAttempts'),
             } | merge(overrideAttrs.maxAttempts ?? {})) }}
@@ -210,11 +217,31 @@
                 value: settings.attemptWindowSeconds,
                 suffix: 'seconds' | t('speakeasy'),
                 type: 'number',
+                size: 6,
                 min: 1,
                 errors: settings.getErrors('attemptWindowSeconds'),
             } | merge(overrideAttrs.attemptWindowSeconds ?? {})) }}
         {% endnamespace %}
     </div>
+
+    {# Craft 6 selects the tab named in the URL's hash on load, but leaves the
+       panels as rendered, so the General panel stays on screen. Show the panel
+       the hash names. Craft 5 already does this, so here it changes nothing. #}
+    {% js %}
+        (function () {
+            var panels = ['speakeasy-general', 'speakeasy-appearance'];
+            var target = window.location.hash.slice(1);
+            if (panels.indexOf(target) === -1) {
+                return;
+            }
+            panels.forEach(function (id) {
+                var panel = document.getElementById(id);
+                if (panel) {
+                    panel.classList.toggle('hidden', id !== target);
+                }
+            });
+        })();
+    {% endjs %}
 
     <div id="speakeasy-appearance" class="hidden" role="tabpanel" aria-labelledby="tab-speakeasy-appearance">
         {# The preview iframe's document, built from the same partials as the real
@@ -344,7 +371,19 @@
                     <div>
                         {% if hasCodeEditor %}
                             {% import 'codeeditor/codeEditor' as codeEditor %}
-                            {{ codeEditor.textarea(cssField, 'CodeEditor', { language: 'css', readOnly: cssOverridden }, { wrapperClass: 'monaco-editor-background-frame' }) }}
+                            {# A plain textarea rather than the macro's `forms.textarea`. On
+                               Craft 6 that renders a `<craft-textarea>` component, and Monaco,
+                               which inserts itself beside the textarea, would land inside the
+                               component where it isn't displayed. #}
+                            {{ tag('textarea', {
+                                id: cssField.id,
+                                name: cssField.name,
+                                rows: cssField.rows,
+                                class: ['text', 'fullwidth', 'code'],
+                                disabled: cssField.disabled,
+                                text: cssField.value,
+                            }) }}
+                            {{ codeEditor.includeJs(cssField.id, 'CodeEditor', { language: 'css', readOnly: cssOverridden }, { wrapperClass: 'monaco-editor-background-frame' }) }}
                         {% else %}
                             {{ forms.textarea(cssField) }}
                         {% endif %}

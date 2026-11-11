@@ -154,7 +154,7 @@ class Plugin extends \craft\base\Plugin
         // of which names its keys up front, so only a plain array is inspectable.
         $fileConfig = Craft::$app->getConfig()->getConfigFromFile($this->handle);
 
-        return $controller->renderTemplate('speakeasy/_settings.twig', [
+        $response = $controller->renderTemplate('speakeasy/_settings.twig', [
             'plugin' => $this,
             'settings' => $settings,
             // Lockdown is set outside the CP, so it's reported as state rather than
@@ -179,5 +179,16 @@ class Plugin extends \craft\base\Plugin
             // them so those fields say so rather than silently discarding edits.
             'configOverrides' => is_array($fileConfig) ? array_keys($fileConfig) : [],
         ]);
+
+        // On Craft 6 the settings page is served by a Laravel controller, which
+        // can't send the Yii2 adapter's legacy response object. Hand it the
+        // Laravel response behind it, as the adapter's own default does.
+        if (method_exists($response, 'getIlluminateResponse')) {
+            $response->send();
+
+            return $response->getIlluminateResponse();
+        }
+
+        return $response;
     }
 }

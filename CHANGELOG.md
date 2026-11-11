@@ -7,6 +7,9 @@
 
 ### Fixed
 - A missing or empty security key no longer crashes the edit screen. The password is treated as undecryptable, so the element stays locked.
+- On Craft 6, the Password field is styled like Craft's own text inputs: the same border, fill, height and radius, with the eye icon inside the field.
+- Fixed the plugin settings page not loading on Craft 6.
+- Fixed the settings page on Craft 6 showing the wrong tab's content when opened from a link to a tab, and the **Unlock screen CSS** editor not appearing.
 
 ### Changed
 - A field layout can hold only one Password field, as an element has one password. Saving a layout with two different Password fields is refused. Layouts that already have two keep working as before, with the first field holding a value gating the element, until the layout is next saved. The editor notices saying which of the two is gating are gone.

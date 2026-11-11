@@ -298,12 +298,12 @@ class PasswordField extends Field implements PreviewableFieldInterface
         $eye = Html::tag('span', Cp::iconSvg('eye'), [
             'data-speakeasy-eye' => true,
             'class' => 'cp-icon',
-            'style' => ['--icon-size' => '1rem', '--icon-color' => 'var(--gray-400)', 'display' => 'inline-flex'],
+            'style' => ['--icon-size' => '1rem', '--icon-color' => 'var(--c-text-quiet, var(--gray-400))', 'display' => 'inline-flex'],
         ]);
         $eyeOff = Html::tag('span', Cp::iconSvg('eye-low-vision'), [
             'data-speakeasy-eye-off' => true,
             'class' => 'cp-icon',
-            'style' => ['--icon-size' => '1rem', '--icon-color' => 'var(--gray-400)', 'display' => 'none'],
+            'style' => ['--icon-size' => '1rem', '--icon-color' => 'var(--c-text-quiet, var(--gray-400))', 'display' => 'none'],
         ]);
 
         // Nothing to reveal when the field is empty, so the toggle starts hidden and
@@ -454,5 +454,34 @@ class PasswordField extends Field implements PreviewableFieldInterface
 JS;
 
         Craft::$app->getView()->registerJs($js, View::POS_END);
+
+        // Craft 6 still styles `.text` inputs, but not like its own: the fill is
+        // transparent and the border, radius and shadow differ from a native
+        // text field. Give the display input the same look as Craft 6's inputs.
+        // Its icons also take their colour from `currentColor` rather than
+        // `--icon-color`, so the eye button sets one.
+        // Craft 5 doesn't have these tokens and styles `.text` as it always has,
+        // so this is only registered on Craft 6.
+        if (version_compare(Craft::$app->getVersion(), '6.0.0-alpha', '>=')) {
+            Craft::$app->getView()->registerCss(<<<'CSS'
+[data-speakeasy-field] input.text {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--c-input-height, var(--c-size-control-md));
+  padding-block: 0;
+  padding-inline-start: var(--c-input-spacing-inline, var(--c-form-control-spacing-inline));
+  border: var(--c-input-border-width, var(--c-form-control-border-width)) var(--c-input-border-style, var(--c-form-control-border-style)) var(--c-input-border-color, var(--c-form-control-border-color));
+  border-radius: var(--c-input-radius, var(--c-form-control-radius));
+  box-shadow: var(--c-input-shadow);
+  color: var(--c-form-control-text);
+}
+[data-speakeasy-field] input.text:not(:disabled) {
+  background-color: var(--c-input-fill, var(--c-form-control-fill));
+}
+[data-speakeasy-toggle] {
+  color: var(--c-text-quiet);
+}
+CSS);
+        }
     }
 }
