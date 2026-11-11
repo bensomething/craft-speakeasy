@@ -6,6 +6,7 @@ use Craft;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Crypt;
 use Throwable;
+use yii\base\Security as YiiSecurity;
 
 /**
  * Encrypts and decrypts stored passwords on Craft 5 and Craft 6.
@@ -44,10 +45,36 @@ final class Cipher
             } catch (DecryptException) {
                 // Not encrypted by Laravel: probably saved on Craft 5.
             }
+
+            return self::decryptLegacy($encrypted, Craft::$app->getConfig()->getGeneral()->securityKey);
         }
 
         try {
             $decrypted = Craft::$app->getSecurity()->decryptByKey($encrypted);
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $decrypted === false ? null : $decrypted;
+    }
+
+    /**
+     * Decrypts a value saved on Craft 5, on Craft 6.
+     *
+     * This uses a plain Yii security component rather than Craft's. The Yii2
+     * adapter's `craft\services\Security` replaces `hashData()`/`validateData()`
+     * with Laravel's encrypter, and Yii's `decryptByKey()` calls
+     * `validateData()` to check the MAC, so Craft's component can never decrypt
+     * Craft 5 ciphertext, even with the right key.
+     */
+    private static function decryptLegacy(string $encrypted, ?string $key): ?string
+    {
+        if ($key === null || $key === '') {
+            return null;
+        }
+
+        try {
+            $decrypted = (new YiiSecurity())->decryptByKey($encrypted, $key);
         } catch (Throwable) {
             return null;
         }
