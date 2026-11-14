@@ -33,7 +33,7 @@ The `-beta` in the constraint is what lets Composer install it under a project's
 2. Set a password on an element to protect it. Clear it to make it public again.
 
 > [!TIP]
-> **On Craft 6, consider putting the field in a sidebar tab.** A password controls who can see the element rather than being part of its content, so it sits naturally beside the status and other meta fields. In the field layout designer, add a tab, set its type to **Sidebar**, and drop the Password field into it. Each entry type has its own layout, so you choose this per entry type.
+> **On Craft 6, consider putting the field in a sidebar tab.** A password controls who can see the element rather than being part of its content, so it sits naturally beside the status and other meta fields. In the field layout designer, click **New tab** under **Sidebar Tabs** and add the Password field to it. Each entry type has its own layout, so you choose this per entry type.
 
 Anonymous visitors get the unlock screen. Elements sharing the same password unlock together.
 
