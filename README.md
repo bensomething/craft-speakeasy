@@ -32,6 +32,9 @@ The `-beta` in the constraint is what lets Composer install it under a project's
 1. **Settings → Fields → New field**, create a **Password** field, then add it to the field layouts you want to protect.
 2. Set a password on an element to protect it. Clear it to make it public again.
 
+> [!TIP]
+> **On Craft 6, consider putting the field in a sidebar tab.** A password controls who can see the element rather than being part of its content, so it sits naturally beside the status and other meta fields. In the field layout designer, add a tab, set its type to **Sidebar**, and drop the Password field into it. Each entry type has its own layout, so you choose this per entry type.
+
 Anonymous visitors get the unlock screen. Elements sharing the same password unlock together.
 
 To flag protected elements in your own templates, test the field for a value: set is truthy, empty is `null`:
